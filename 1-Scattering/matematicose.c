@@ -4,6 +4,18 @@
     Simple math
 */
 
+void simple_acf(const double *H, size_t length, int k_max, double * acf);
+void fft_acf(const double *H, size_t length, int k_max, double * acf);
+double sum(const double *A, size_t length);
+int intsum(const int * A, size_t length);
+double mean(const double * A, size_t length);
+double intmean(const int * A, size_t length);
+double variance(const double * A, size_t length);
+double variance_corr(const double * A, double tau, size_t length);
+void zeros(size_t length, double *A);
+void elforel(const double *A, const double * B, double * C, size_t length);
+bool isApproxEqual(double a, double b);
+
 
 inline double sum(const double * A, size_t length)   
 {
@@ -68,6 +80,54 @@ inline double variance(const double * A, size_t length)
     return var;
 }
 
+// Secant method with a function as input
+double zerosecant(double (*f)(double), double x1, double x2, double inf, double sup)
+    if (f(x1)>inf && f(x1)<sup)
+        return x1;
+    else if (f(x2)>inf && f(x2)<sup)
+        return x2;
+    else if (f(x1)*f(x2)>0) {
+        perror("f(X1) and f(X2) must have an opposing sign");
+        return -1;
+    }
+    else
+    {
+        double x_;
+        while (f(x2)<inf || f(x2)>sup)  // restituisce il valore dove la funzione fa circa 0
+        {
+            x_ = x2;  // x precedente
+            x2 = x2 - f(x2)*(x2-x1)/(f(x2)-f(x1));
+            x1 = x_;
+        }
+    }
+    return x2;
+}
+
+// same as above, but takes an additional argument that subctracts from the function
+// i.e. finds where V(x) and F2 meet
+double secant(double (*f)(double), double F2, double x1, double x2, double inf, double sup)
+    if ((f(x1)-F2)>inf && (f(x1)-F2)<sup)
+        return x1;
+    else if ((f(x2)-F2)>inf && (f(x2)-F2)<sup)
+        return x2;
+    else if ((f(x1)-F2)*(f(x2)-F2)>0) {
+        perror("f(X1) and f(X2) must have an opposing sign");
+        return -1;
+    }
+    else
+    {
+        double x_;
+        while ((f(x2)-F2)<inf || (f(x2)-F2)>sup)  // restituisce il valore dove la funzione fa circa 0
+        {
+            x_ = x2;  // x precedente
+            x2 = x2 - (f(x2)-F2)*(x2-x1)/((f(x2)-F2)-(f(x1)-F2));
+            x1 = x_;
+        }
+    }
+    return x2;
+}
+
+
 
 /*
  * Put in the array A gaussian-distributed numbers around 0, with standard deviation sigma
@@ -84,6 +144,24 @@ inline void vecBoxMuller(double sigma, size_t length, double * A)
         A[2*i+1] = sigma * sqrt(-2*log(1-x2)) * sin(2*M_PI*x1);
     }
 }
+
+
+/*
+ * 
+ * Calculus
+ * 
+*/
+
+// numerical derivatives
+
+double der3(double * F, int x, double h)
+{
+    return (F[x+1] - F[x-1])/(2*h);
+}
+
+
+
+
 
 
  
