@@ -21,19 +21,13 @@ typedef struct DoubleArray {
     double *data;
 } DoubleArray;
 
+typedef struct Spectrum { 
+    size_t length;
+    double *data;
+} Spectrum;
 
-void numerov(int n, int l, double h, double rmax, double * x)
 
-void simple_acf(const double *H, size_t length, int k_max, double * acf);
-void fft_acf(const double *H, size_t length, int k_max, double * acf);
-double sum(const double *A, size_t length);
-int intsum(const int * A, size_t length);
-double mean(const double * A, size_t length);
-double intmean(const int * A, size_t length);
-double variance(const double * A, size_t length);
-double variance_corr(const double * A, double tau, size_t length);
-void zeros(size_t length, double *A);
-void elforel(const double *A, const double * B, double * C, size_t length);
-bool isApproxEqual(double a, double b);
+void numerov_forward(int l, double E, double h, double rmax, double * x);
+double E0(double h, double rmax);
 
 
