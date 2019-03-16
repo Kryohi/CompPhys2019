@@ -81,7 +81,8 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
     {
         xc_float = secant(V, E, 1e-6, rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
         xc = (int) round(xc_float/h);
-        if (xc<200) xc = 200; // otherwise for values of E close to the V minimum the algorithm doesn't work
+        if (xc<100) xc = 100; // otherwise for values of E close to the V minimum the algorithm doesn't work
+        printf("xc = %d\n",xc)
         for (int x=0; x<xmax; x++)  k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h);
         numerov_forward(h, xc, k2, yf);
         numerov_backward(h, xc, xmax, k2, yb);
