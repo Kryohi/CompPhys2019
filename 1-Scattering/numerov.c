@@ -41,7 +41,7 @@ int main(int argc, char** argv)
         spectra[l] = numerov(nmax, l, xmax, rmax, 0.1);
     
     
-    // save to a csv file    
+    // save to a csv file (TODO)
     char filename[64];
     snprintf(filename, 64, "./eigen_%d.csv", nmax);
     FILE * eigen;
@@ -85,6 +85,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
         for (int x=0; x<xmax; x++)  k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h);
         numerov_forward(h, xc, k2, yf);
         numerov_backward(h, xc, xmax, k2, yb);
+        // Dà già problemi a questo punto
         printf("yf[xc-1] = %f,  yf[xc] = %f,  yf[xc+1]=%f\n", yf[xc-1], yf[xc], yf[xc+1]);
         printf("yb[xc-1] = %f,  yb[xc] = %f,  yb[xc+1]=%f\n", yb[xc-1], yb[xc], yb[xc+1]);
         delta = der3(yf,xc,h)/yf[xc] - der3(yb,xc,h)/yb[xc];
