@@ -71,11 +71,11 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
     for (int x=0; x<xmax; x++)
         V_[x] = V(x*h);
         
-    // Boundary conditions (TODO)
+    // Boundary conditions
     yf[0] = 0;
-    yf[1] = pow(h,l-1);
+    yf[1] = pow(h,l);
     yb[xmax-1] = 0;
-    yb[xmax-2] = 1e-10;
+    yb[xmax-2] = 1e-10; //(TODO)
     
     while (nfound <= nmax)
     {
@@ -85,11 +85,13 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
         for (int x=0; x<xmax; x++)  k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h);
         numerov_forward(h, xc, k2, yf);
         numerov_backward(h, xc, xmax, k2, yb);
+        printf("yf[xc-1] = %f,  yf[xc] = %f,  yf[xc+1]=%f\n", yf[xc-1], yf[xc], yf[xc+1]);
+        printf("yb[xc-1] = %f,  yb[xc] = %f,  yb[xc+1]=%f\n", yb[xc-1], yb[xc], yb[xc+1]);
         delta = der3(yf,xc,h)/yf[xc] - der3(yb,xc,h)/yb[xc];
         printf("derforward = %f,  derback = %f\n", der3(yf,xc,h)/yf[xc], der3(yb,xc,h)/yb[xc]);
         printf("Delta rough = %f\n", delta);
         
-        // If there is a change in sign, start the finer search of the 0 with the secant method
+        // If there is a change in sign, start the finer search of the 0 of delta(E) with the secant method
         if (delta*prevdelta < 0)
         {
             printf("Found a point of inversion!");
@@ -139,13 +141,13 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
 */ 
 void numerov_forward(double h, int xc, const double * k2, double * y)
 {
-    for (int x=2; x<xc+2; x++)
+    for (int x=2; x<xc+4; x++)
         y[x] = (y[x-1]*(2 - 5*h*h*k2[x-1]/6) - y[x-2]*(1 + h*h*k2[x-2]/12)) / (1 + h*h*k2[x]/12); // controllare indici
 }
 
 void numerov_backward(double h, int xc, int xmax, const double * k2, double * y)
 {
-    for (int x=xmax-3; x>xc-2; x--)
+    for (int x=xmax-3; x>xc-4; x--)
         y[x] = (y[x+1]*(2 - 5*h*h*k2[x+1]/6) - y[x+2]*(1 + h*h*k2[x+2]/12)) / (1 + h*h*k2[x]/12); // controllare indici
 }
 
