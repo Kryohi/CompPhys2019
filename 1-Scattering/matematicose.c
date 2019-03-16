@@ -113,10 +113,10 @@ double secant(double (*f)(double), double c, double x1, double x2, double inf, d
         return x1;
     else if ((f(x2)-c)>inf && (f(x2)-c)<sup)
         return x2;
-    /*else if ((f(x1)-c)*(f(x2)-c)>0) {
+    else if ((f(x1)-c)*(f(x2)-c)>0) {
         perror("f(X1) and f(X2) must have an opposing sign");
         return -1;
-    }*/
+    }
     else
     {
         double x_;
