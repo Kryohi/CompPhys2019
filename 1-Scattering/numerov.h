@@ -27,7 +27,10 @@ typedef struct Spectrum {
 } Spectrum;
 
 
-void numerov_forward(int l, double E, double h, double rmax, double * x);
+void numerov_forward(int l, double E, double h, int xc, const double * k2, double * y);
+void numerov_backward(int l, double E, double h, int xc, const double * k2, double * y);
+double numerov(int nmax, int l, int xmax, double rmax, double Estep);
+double V(double x);
 double E0(double h, double rmax);
 
 

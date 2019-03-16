@@ -82,6 +82,7 @@ inline double variance(const double * A, size_t length)
 
 // Secant method with a function as input
 double zerosecant(double (*f)(double), double x1, double x2, double inf, double sup)
+{
     if (f(x1)>inf && f(x1)<sup)
         return x1;
     else if (f(x2)>inf && f(x2)<sup)
@@ -106,6 +107,7 @@ double zerosecant(double (*f)(double), double x1, double x2, double inf, double 
 // same as above, but takes an additional argument that subctracts from the function
 // i.e. finds where f(x) and c meet
 double secant(double (*f)(double), double c, double x1, double x2, double inf, double sup)
+{
     if ((f(x1)-c)>inf && (f(x1)-c)<sup)
         return x1;
     else if ((f(x2)-c)>inf && (f(x2)-c)<sup)
