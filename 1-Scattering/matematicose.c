@@ -104,23 +104,23 @@ double zerosecant(double (*f)(double), double x1, double x2, double inf, double 
 }
 
 // same as above, but takes an additional argument that subctracts from the function
-// i.e. finds where V(x) and F2 meet
-double secant(double (*f)(double), double F2, double x1, double x2, double inf, double sup)
-    if ((f(x1)-F2)>inf && (f(x1)-F2)<sup)
+// i.e. finds where f(x) and c meet
+double secant(double (*f)(double), double c, double x1, double x2, double inf, double sup)
+    if ((f(x1)-c)>inf && (f(x1)-c)<sup)
         return x1;
-    else if ((f(x2)-F2)>inf && (f(x2)-F2)<sup)
+    else if ((f(x2)-c)>inf && (f(x2)-c)<sup)
         return x2;
-    else if ((f(x1)-F2)*(f(x2)-F2)>0) {
+    else if ((f(x1)-c)*(f(x2)-c)>0) {
         perror("f(X1) and f(X2) must have an opposing sign");
         return -1;
     }
     else
     {
         double x_;
-        while ((f(x2)-F2)<inf || (f(x2)-F2)>sup)  // restituisce il valore dove la funzione fa circa 0
+        while ((f(x2)-c)<inf || (f(x2)-c)>sup)  // restituisce il valore dove la funzione fa circa 0
         {
             x_ = x2;  // x precedente
-            x2 = x2 - (f(x2)-F2)*(x2-x1)/((f(x2)-F2)-(f(x1)-F2));
+            x2 = x2 - (f(x2)-c)*(x2-x1)/((f(x2)-c)-(f(x1)-c));
             x1 = x_;
         }
     }
