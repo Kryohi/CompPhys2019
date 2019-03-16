@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 
     // Iterates the Numerov algorithm for different quantum numbers
     for (int l=0; l<=lmax; l++)
-        spectra[l] = numerov(nmax, l, xmax, rmax, 0.1);
+        spectra[l] = numerov(nmax, l, xmax, rmax, 0.23);
     
     
     // save to a csv file (TODO)
@@ -63,14 +63,14 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
     int xc; // point of classical barrier
     int nfound = 0; // number of eigenvalues found;
     int niter = 0;
-    double h = rmax/nmax;
+    double h = rmax/xmax;
     double E=E0(h, rmax), E1, E2, E_;
     double V_[xmax], k2[xmax];
     double yf[xmax], yb[xmax]; // ridurli alla lunghezza effettivamente usata?
     
     for (int x=0; x<xmax; x++)
         V_[x] = V(x*h);
-        
+    
     // Boundary conditions
     yf[0] = 0;
     yf[1] = pow(h,l);
@@ -79,9 +79,12 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
     
     while (nfound <= nmax)
     {
-        xc_float = secant(V, E, 1e-6, rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+        //xc_float = secant(V, E, 1e-6, rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+        xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
         xc = (int) round(xc_float/h);
-        if (xc<200) xc = 200; // otherwise for values of E close to the V minimum the algorithm doesn't work
+        printf("E = %f\n",E);
+        if (xc<40) xc = 40; // otherwise for values of E close to the V minimum the algorithm doesn't work
+        printf("xc = %d\n",xc);
         for (int x=0; x<xmax; x++)  k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h);
         numerov_forward(h, xc, k2, yf);
         numerov_backward(h, xc, xmax, k2, yb);
@@ -109,7 +112,8 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
                 delta1 = delta2;
                 printf("E2 = %f\tdelta2 = %f\n", E2, delta2);
                 
-                xc_float = secant(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+                //xc_float = secant(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+                xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
                 xc = (int) round(xc_float/h);
                 for (int x=0; x<xmax; x++)  k2[x] = (E2-V_[x])/h2m - l*(l+1)/(x*h*x*h);
                 numerov_forward(h, xc, k2, yf);
