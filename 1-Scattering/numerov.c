@@ -1,6 +1,7 @@
 // TODO
 /*
- * subito con matching all'indietro?
+ * fixare backward itaration
+ * derivata a 5 punti invece che 3
  * come strutturare output
  * cosa serve cambiare per scattering
  * 
@@ -32,14 +33,12 @@ int main(int argc, char** argv)
     make_directory("Data");
     chdir("Data");
     
-    // creates struct with the results
-    //double y[nmax];
-    
+    // creates array of structs with the results, one set for each value of l
+    struct Spectrum spectra[lmax];
+
     // Iterates the Numerov algorithm for different quantum numbers
     for (int l=0; l<=lmax; l++)
-    {
-        numerov(nmax, l, xmax, rmax, 0.1);
-    }
+        spectra[l] = numerov(nmax, l, xmax, rmax, 0.1);
     
     
     // save to a csv file    
@@ -55,8 +54,10 @@ int main(int argc, char** argv)
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns 
-double numerov(int nmax, int l, int xmax, double rmax, double Estep)
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
 {
+    struct Spectrum sp;
+    sp.EE = calloc(nmax, sizeof(double));
     double delta, delta1, delta2, prevdelta=0;
     double xc_float;
     int xc; // point of classical barrier
@@ -72,23 +73,26 @@ double numerov(int nmax, int l, int xmax, double rmax, double Estep)
         
     // Boundary conditions (TODO)
     yf[0] = 0;
-    yf[1] = pow(h, l-1);
+    yf[1] = pow(h,l-1);
     yb[xmax-1] = 0;
     yb[xmax-2] = 1e-10;
     
-    
     while (nfound <= nmax)
     {
-        xc_float = secant(V, E, 0., rmax, h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+        xc_float = secant(V, E, 1e-6, rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
         xc = (int) round(xc_float/h);
+        if (xc<200) xc = 200; // otherwise for values of E close to the V minimum the algorithm doesn't work
         for (int x=0; x<xmax; x++)  k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h);
         numerov_forward(h, xc, k2, yf);
         numerov_backward(h, xc, xmax, k2, yb);
         delta = der3(yf,xc,h)/yf[xc] - der3(yb,xc,h)/yb[xc];
+        printf("derforward = %f,  derback = %f\n", der3(yf,xc,h)/yf[xc], der3(yb,xc,h)/yb[xc]);
+        printf("Delta rough = %f\n", delta);
         
         // If there is a change in sign, start the finer search of the 0 with the secant method
         if (delta*prevdelta < 0)
         {
+            printf("Found a point of inversion!");
             E1 = E - Estep; // store the previous value of E, before the change of sign
             E2 = E;
             delta1 = prevdelta;
@@ -100,26 +104,33 @@ double numerov(int nmax, int l, int xmax, double rmax, double Estep)
                 E2 = E2 - delta2*(E2-E1) / (delta2-delta1);
                 E1 = E_;
                 delta1 = delta2;
+                printf("E2 = %f\tdelta2 = %f\n", E2, delta2);
                 
-                xc_float = secant(V, E2, 0., rmax, h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+                xc_float = secant(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
                 xc = (int) round(xc_float/h);
                 for (int x=0; x<xmax; x++)  k2[x] = (E2-V_[x])/h2m - l*(l+1)/(x*h*x*h);
                 numerov_forward(h, xc, k2, yf);
                 numerov_backward(h, xc, xmax, k2, yb);
                 delta2 = der3(yf,xc,h)/yf[xc] - der3(yb,xc,h)/yb[xc];
+                printf("Delta fine = %f", delta2);
                 
                 niter++;
             }
             printf("E%d = %f\n", nfound, E2);
             printf("Found in %d iterations\n\n", niter);
+            sp.EE[nfound] = E2;
             niter = 0;
             nfound++;
         }
+        
         prevdelta = delta;
         E += Estep;
+        
+        if (E>V_[xmax-1])
+            perror("Could not find enough solutions with the parameters provided\n");
     }
     
-    return E;
+    return sp;
 }
 
 /*
@@ -129,13 +140,13 @@ double numerov(int nmax, int l, int xmax, double rmax, double Estep)
 void numerov_forward(double h, int xc, const double * k2, double * y)
 {
     for (int x=2; x<xc+2; x++)
-        y[x] = (y[x-1]*(2 - 5*h*h*k2[x-1]/12) - y[x-2]*(1 + h*h*k2[x]/12)) / (1 + h*h*k2[x]/12); // controllare indici
+        y[x] = (y[x-1]*(2 - 5*h*h*k2[x-1]/6) - y[x-2]*(1 + h*h*k2[x-2]/12)) / (1 + h*h*k2[x]/12); // controllare indici
 }
 
 void numerov_backward(double h, int xc, int xmax, const double * k2, double * y)
 {
-    for (int x=xmax-3; x<xc-2; x--)
-        y[x] = (y[x+1]*(2 - 5*h*h*k2[x+1]/12) - y[x+2]*(1 + h*h*k2[x]/12)) / (1 + h*h*k2[x]/12); // controllare indici
+    for (int x=xmax-3; x>xc-2; x--)
+        y[x] = (y[x+1]*(2 - 5*h*h*k2[x+1]/6) - y[x+2]*(1 + h*h*k2[x+2]/12)) / (1 + h*h*k2[x]/12); // controllare indici
 }
 
 
@@ -149,7 +160,7 @@ inline double V(double x)
 double E0(double h, double rmax)
 {
     // we'll just assume that the minimum is at 0 ¯\_(ツ)_/¯
-    return V(1e-9);
+    return V(1e-2);
 }
 
 

@@ -108,14 +108,15 @@ double zerosecant(double (*f)(double), double x1, double x2, double inf, double 
 // i.e. finds where f(x) and c meet
 double secant(double (*f)(double), double c, double x1, double x2, double inf, double sup)
 {
+    printf("V(x1) = %f\tV(x2) = %f\t c=%f\n", f(x1), f(x2), c);
     if ((f(x1)-c)>inf && (f(x1)-c)<sup)
         return x1;
     else if ((f(x2)-c)>inf && (f(x2)-c)<sup)
         return x2;
-    else if ((f(x1)-c)*(f(x2)-c)>0) {
+    /*else if ((f(x1)-c)*(f(x2)-c)>0) {
         perror("f(X1) and f(X2) must have an opposing sign");
         return -1;
-    }
+    }*/
     else
     {
         double x_;
@@ -124,7 +125,9 @@ double secant(double (*f)(double), double c, double x1, double x2, double inf, d
             x_ = x2;  // x precedente
             x2 = x2 - (f(x2)-c)*(x2-x1)/((f(x2)-c)-(f(x1)-c));
             x1 = x_;
+            printf("x2 fin = %f\n",x2);
         }
+        
     }
     return x2;
 }
