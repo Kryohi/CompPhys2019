@@ -82,8 +82,8 @@ double numerov(int nmax, int l, int xmax, double rmax, double Estep)
         xc_float = secant(V, E, 0., rmax, h/4, h/4); // finds the 0 of V(x)-E with the secant method.
         xc = (int) round(xc_float/h);
         for (int x=0; x<xmax; x++)  k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h);
-        numerov_forward(l, E, h, xc, k2, yf);
-        numerov_backward(l, E, h, xc, k2, yb);
+        numerov_forward(h, xc, k2, yf);
+        numerov_backward(h, xc, xmax, k2, yb);
         delta = der3(yf,xc,h)/yf[xc] - der3(yb,xc,h)/yb[xc];
         
         // If there is a change in sign, start the finer search of the 0 with the secant method
@@ -104,8 +104,8 @@ double numerov(int nmax, int l, int xmax, double rmax, double Estep)
                 xc_float = secant(V, E2, 0., rmax, h/4, h/4); // finds the 0 of V(x)-E with the secant method.
                 xc = (int) round(xc_float/h);
                 for (int x=0; x<xmax; x++)  k2[x] = (E2-V_[x])/h2m - l*(l+1)/(x*h*x*h);
-                numerov_forward(l, E2, h, xc, k2, yf);
-                numerov_backward(l, E2, h, xc, k2, yb);
+                numerov_forward(h, xc, k2, yf);
+                numerov_backward(h, xc, xmax, k2, yb);
                 delta2 = der3(yf,xc,h)/yf[xc] - der3(yb,xc,h)/yb[xc];
                 
                 niter++;
@@ -126,16 +126,16 @@ double numerov(int nmax, int l, int xmax, double rmax, double Estep)
  * Differential equation iterative solution
  * aggiunge 2 punti dopo la barriera classica in xc, per calcolare derivata in quel punto
 */ 
-void numerov_forward(int l, double E, double h, int xc, const double * k2, double * y)
+void numerov_forward(double h, int xc, const double * k2, double * y)
 {
     for (int x=2; x<xc+2; x++)
         y[x] = (y[x-1]*(2 - 5*h*h*k2[x-1]/12) - y[x-2]*(1 + h*h*k2[x]/12)) / (1 + h*h*k2[x]/12); // controllare indici
 }
 
-void numerov_backward(int l, double E, double h, int xc, const double * k2, double * y)
+void numerov_backward(double h, int xc, int xmax, const double * k2, double * y)
 {
-    for (int x=2; x<xc-2; x--)
-        y[x] = (y[x-1]*(2 - 5*h*h*k2[x-1]/12) - y[x-2]*(1 + h*h*k2[x]/12)) / (1 + h*h*k2[x]/12); // controllare indici
+    for (int x=xmax-3; x<xc-2; x--)
+        y[x] = (y[x+1]*(2 - 5*h*h*k2[x+1]/12) - y[x+2]*(1 + h*h*k2[x]/12)) / (1 + h*h*k2[x]/12); // controllare indici
 }
 
 
