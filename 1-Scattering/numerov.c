@@ -167,11 +167,10 @@ inline double V_ho(double x)
     return x*x/2;
 }
 
-
-double E0(double h, double rmax)
+double E0(double h, double rmax, double (*V)(double))
 {
-    // we'll just assume that the minimum is at 0 ¯\_(ツ)_/¯
-    return V_ho(1e-1);
+    // we'll just assume that the minimum is near 0 ¯\_(ツ)_/¯
+    return V(1e-1);
 }
 
 
