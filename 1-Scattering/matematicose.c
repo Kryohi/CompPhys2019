@@ -15,6 +15,11 @@ double variance_corr(const double * A, double tau, size_t length);
 void zeros(size_t length, double *A);
 void elforel(const double *A, const double * B, double * C, size_t length);
 bool isApproxEqual(double a, double b);
+double zerosecant(double (*f)(double), double x1, double x2, double inf, double sup);
+double secant(double (*f)(double), double c, double x1, double x2, double inf, double sup);
+void fast_bessel(double x, double lmax, double * J);
+double der3(double * F, int x, double h);
+
 
 
 inline double sum(const double * A, size_t length)   
@@ -132,6 +137,15 @@ double secant(double (*f)(double), double c, double x1, double x2, double inf, d
     return x2;
 }
 
+void fast_bessel(double x, double lmax, double * J)
+{
+    //double j_1 = cos(x)/x;
+    J[0] = sin(x)/x;
+    J[1] = (sin(x)/x - cos(x))/x;
+    
+    for (int l=1; l<lmax; l++)
+        J[l+1] = ((2*l+1)/x) * J[l] - J[l-1];
+}
 
 
 /*

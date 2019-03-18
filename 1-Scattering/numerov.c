@@ -34,11 +34,11 @@ int main(int argc, char** argv)
     chdir("Data");
     
     // creates array of structs with the results, one set for each value of l
-    struct Spectrum spectra[lmax];
+    struct Spectrum spectra[lmax+1];
 
     // Iterates the Numerov algorithm for different quantum numbers
     for (int l=0; l<=lmax; l++)
-        spectra[l] = numerov(nmax, l, xmax, rmax, 0.23);
+        spectra[l] = numerov(nmax, l, xmax, rmax, 0.23, V_ho);
     
     
     // save to a csv file (TODO)
@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns 
-Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*V)(double))
 {
     struct Spectrum sp;
     sp.EE = calloc(nmax, sizeof(double));
@@ -75,16 +75,14 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
     yf[0] = 0;
     yf[1] = pow(h,l);
     
-    
     while (nfound <= nmax)
     {
         //xc_float = secant(V, E, 1e-6, rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
         xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
         xc = (int) round(xc_float/h);
         printf("E = %f\n",E);
-        if (xc<40) xc = 40; // otherwise for values of E close to the V minimum the algorithm doesn't work
         printf("xc = %d\n",xc);
-        for (int x=0; x<xmax; x++)  k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h+1e-9);
+        for (int x=0; x<xmax; x++)  k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h+1e-14);
         
         // Boundary conditions at rmax
         yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
@@ -92,14 +90,11 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
         
         numerov_forward(h, xc, k2, yf);
         numerov_backward(h, xc, xmax, k2, yb);
-        // Dà già problemi a questo punto
         printf("yf[xc-1] = %f,  yf[xc] = %f,  yf[xc+1]=%f\n", yf[xc-1], yf[xc], yf[xc+1]);
         printf("yb[xc-1] = %f,  yb[xc] = %f,  yb[xc+1]=%f\n", yb[xc-1], yb[xc], yb[xc+1]);
         delta = der3(yf,xc,h)/yf[xc] - der3(yb,xc,h)/yb[xc];
         printf("derforward = %f,  derback = %f\n", der3(yf,xc,h)/yf[xc], der3(yb,xc,h)/yb[xc]);
         printf("Delta rough = %f\n", delta);
-        
-        //return sp;
         
         // If there is a change in sign, start the finer search of the 0 of delta(E) with the secant method
         if (delta*prevdelta < 0)
@@ -110,7 +105,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
             delta1 = prevdelta;
             delta2 = delta;
             
-            while (fabs(delta2) > 1e-4)
+            while (fabs(delta2) > 1e-6)
             {
                 E_ = E2;  // E precedente
                 E2 = E2 - delta2*(E2-E1) / (delta2-delta1);
@@ -167,15 +162,14 @@ void numerov_backward(double h, int xc, int xmax, const double * k2, double * y)
 
 
 
-inline double V(double x)
+inline double V_ho(double x)
 {
     return x*x/2;
 }
 
-
-double E0(double h, double rmax)
+double E0(double h, double rmax, double (*V)(double))
 {
-    // we'll just assume that the minimum is at 0 ¯\_(ツ)_/¯
+    // we'll just assume that the minimum is near 0 ¯\_(ツ)_/¯
     return V(1e-1);
 }
 
