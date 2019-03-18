@@ -34,7 +34,7 @@ int main(int argc, char** argv)
     chdir("Data");
     
     // creates array of structs with the results, one set for each value of l
-    struct Spectrum spectra[lmax];
+    struct Spectrum spectra[lmax+1];
 
     // Iterates the Numerov algorithm for different quantum numbers
     for (int l=0; l<=lmax; l++)
@@ -110,7 +110,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
             delta1 = prevdelta;
             delta2 = delta;
             
-            while (fabs(delta2) > 1e-4)
+            while (fabs(delta2) > 1e-6)
             {
                 E_ = E2;  // E precedente
                 E2 = E2 - delta2*(E2-E1) / (delta2-delta1);
