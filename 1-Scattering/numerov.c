@@ -20,9 +20,9 @@ int main(int argc, char** argv)
     double rmax;
     
     // asks user for grid parameters and quantum numbers
-    printf("Enter the maximum quantum number n:");
+    printf("Enter the maximum quantum number n: ");
     scanf("%d",&nmax);
-    printf("Enter the maximum quantum number l:");
+    printf("Enter the maximum quantum number l: ");
     scanf("%d",&lmax);
     printf("Enter rmax: ");
     scanf("%lf",&rmax);
@@ -71,11 +71,10 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
     for (int x=0; x<xmax; x++)
         V_[x] = V(x*h);
     
-    // Boundary conditions
+    // Boundary conditions near 0
     yf[0] = 0;
     yf[1] = pow(h,l);
-    yb[xmax-1] = 0;
-    yb[xmax-2] = 1e-10; //(TODO)
+    
     
     while (nfound <= nmax)
     {
@@ -85,7 +84,12 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
         printf("E = %f\n",E);
         if (xc<40) xc = 40; // otherwise for values of E close to the V minimum the algorithm doesn't work
         printf("xc = %d\n",xc);
-        for (int x=0; x<xmax; x++)  k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h);
+        for (int x=0; x<xmax; x++)  k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h+1e-9);
+        
+        // Boundary conditions at rmax
+        yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
+        yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
+        
         numerov_forward(h, xc, k2, yf);
         numerov_backward(h, xc, xmax, k2, yb);
         // Dà già problemi a questo punto
@@ -95,16 +99,18 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
         printf("derforward = %f,  derback = %f\n", der3(yf,xc,h)/yf[xc], der3(yb,xc,h)/yb[xc]);
         printf("Delta rough = %f\n", delta);
         
+        //return sp;
+        
         // If there is a change in sign, start the finer search of the 0 of delta(E) with the secant method
         if (delta*prevdelta < 0)
         {
-            printf("Found a point of inversion!");
+            printf("\nFound a point of inversion!\n");
             E1 = E - Estep; // store the previous value of E, before the change of sign
             E2 = E;
             delta1 = prevdelta;
             delta2 = delta;
             
-            while (fabs(delta2) < 1e-4)
+            while (fabs(delta2) > 1e-4)
             {
                 E_ = E2;  // E precedente
                 E2 = E2 - delta2*(E2-E1) / (delta2-delta1);
@@ -115,7 +121,10 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep)
                 //xc_float = secant(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
                 xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
                 xc = (int) round(xc_float/h);
-                for (int x=0; x<xmax; x++)  k2[x] = (E2-V_[x])/h2m - l*(l+1)/(x*h*x*h);
+                for (int x=0; x<xmax; x++)  k2[x] = (E2-V_[x])/h2m - l*(l+1)/(x*h*x*h+1e-14);
+                // Boundary conditions at rmax
+                yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
+                yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
                 numerov_forward(h, xc, k2, yf);
                 numerov_backward(h, xc, xmax, k2, yb);
                 delta2 = der3(yf,xc,h)/yf[xc] - der3(yb,xc,h)/yb[xc];
@@ -167,7 +176,7 @@ inline double V(double x)
 double E0(double h, double rmax)
 {
     // we'll just assume that the minimum is at 0 ¯\_(ツ)_/¯
-    return V(1e-2);
+    return V(1e-1);
 }
 
 
