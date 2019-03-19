@@ -23,7 +23,7 @@ typedef struct Spectrum {
     size_t xmax;
     int nmax;
     double * EE;
-    double ** eigfuns;  // xmax*nmax 2D array
+    double * eigfuns;  // xmax*nmax 1D array
 } Spectrum;
 
 
