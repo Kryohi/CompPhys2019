@@ -69,7 +69,7 @@ int main(int argc, char** argv)
             fprintf(eigenvectors, "%d, %d", l, n);
             for (int x=0; x<xmax; x++)
                 fprintf(eigenvectors, ", %0.15f", spectra[l].eigfuns[n*xmax+x]);
-            fprintf(eigenvectors, "\n\n\n");
+            fprintf(eigenvectors, "\n");
         }
     }
     
