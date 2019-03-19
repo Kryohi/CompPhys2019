@@ -19,6 +19,7 @@ double zerosecant(double (*f)(double), double x1, double x2, double inf, double 
 double secant(double (*f)(double), double c, double x1, double x2, double inf, double sup);
 void fast_bessel(double x, double lmax, double * J);
 double der3(double * F, int x, double h);
+double der5(double * F, int x, double h);
 
 
 
@@ -113,7 +114,7 @@ double zerosecant(double (*f)(double), double x1, double x2, double inf, double 
 // i.e. finds where f(x) and c meet
 double secant(double (*f)(double), double c, double x1, double x2, double inf, double sup)
 {
-    printf("V(x1) = %f\tV(x2) = %f\t c=%f\n", f(x1), f(x2), c);
+    //printf("V(x1) = %f\tV(x2) = %f\t c=%f\n", f(x1), f(x2), c);
     if ((f(x1)-c)>inf && (f(x1)-c)<sup)
         return x1;
     else if ((f(x2)-c)>inf && (f(x2)-c)<sup)
@@ -130,7 +131,7 @@ double secant(double (*f)(double), double c, double x1, double x2, double inf, d
             x_ = x2;  // x precedente
             x2 = x2 - (f(x2)-c)*(x2-x1)/((f(x2)-c)-(f(x1)-c));
             x1 = x_;
-            printf("x2 fin = %f\n",x2);
+            //printf("x2 fin = %f\n",x2);
         }
         
     }
@@ -141,7 +142,7 @@ void fast_bessel(double x, double lmax, double * J)
 {
     //double j_1 = cos(x)/x;
     J[0] = sin(x)/x;
-    J[1] = (sin(x)/x - cos(x))/x;
+    J[1] = (J[0] - cos(x))/x;
     
     for (int l=1; l<lmax; l++)
         J[l+1] = ((2*l+1)/x) * J[l] - J[l-1];
@@ -178,6 +179,10 @@ double der3(double * F, int x, double h)
     return (F[x+1] - F[x-1])/(2*h);
 }
 
+double der5(double * F, int x, double h)
+{
+    return (-F[x+2] + 8*F[x+1] - 8*F[x-1] + F[x-2])/(12*h);
+}
 
 
 
