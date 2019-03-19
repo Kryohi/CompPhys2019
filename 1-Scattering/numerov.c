@@ -1,7 +1,6 @@
 // TODO
 /*
- * derivata a 5 punti invece che 3
- * come strutturare output
+ * fix inversione di segno appena dopo autovalori
  * cosa serve cambiare per scattering
  * 
  */
@@ -56,7 +55,7 @@ int main(int argc, char** argv)
     
     fprintf(eigenvalues, "l, n, E\n");
     for (int l=0; l<=lmax; l++)
-        for (int n=0; n<=nmax; n++)
+        for (int n=0; n<nmax; n++)
             fprintf(eigenvalues, "%d, %d, %0.9f\n", l, n, spectra[l].EE[n]);
         
     FILE * eigenvectors;
@@ -66,10 +65,10 @@ int main(int argc, char** argv)
     
     fprintf(eigenvectors, "l, n, uvec\n");
     for (int l=0; l<=lmax; l++) {
-        for (int n=0; n<=nmax; n++) {
+        for (int n=0; n<nmax; n++) {
             fprintf(eigenvectors, "%d, %d", l, n);
             for (int x=0; x<xmax; x++)
-                fprintf(eigenvectors, ", %0.9f", spectra[l].eigfuns[n*xmax+x]);
+                fprintf(eigenvectors, ", %0.15f", spectra[l].eigfuns[n*xmax+x]);
             fprintf(eigenvectors, "\n\n\n");
         }
     }
@@ -161,7 +160,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
             for (int x=0; x<xc; x++)
                 sp.eigfuns[xmax*nfound + x] = yf[x];
             for (int x=xc; x<xmax; x++)
-                sp.eigfuns[xmax*nfound + x] = yb[x];
+                sp.eigfuns[xmax*nfound + x] = yb[x] * yf[xc]/yb[xc]; //impose continuity
             nfound++;
         }
         
@@ -215,7 +214,10 @@ int nodeNumber(double * eigv, size_t N)
     return nodes;
 }
 
-
+void curaDiscontinuità(double * y, int xc)
+{
+    
+}
 
 
 
