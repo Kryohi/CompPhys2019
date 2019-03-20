@@ -17,15 +17,24 @@ int main(int argc, char** argv)
     int nmax, lmax, xmax;
     double rmax;
     
-    // asks user for grid parameters and quantum numbers
-    printf("Enter the maximum quantum number n: ");
-    scanf("%d",&nmax);
-    printf("Enter the maximum quantum number l: ");
-    scanf("%d",&lmax);
-    printf("Enter rmax: ");
-    scanf("%lf",&rmax);
-    printf("Enter the number of gridpoints: ");
-    scanf("%d",&xmax);
+    if (argc == 5)  
+    {
+        lmax = (int)strtol(argv[1], NULL, 10);
+        nmax = (int)strtol(argv[2], NULL, 10);
+        rmax = (float)strtol(argv[3], NULL, 10);
+        xmax = (int)strtol(argv[4], NULL, 10);
+    }
+    else    {
+        // asks user for grid parameters and quantum numbers
+        printf("Enter the maximum quantum number n: ");
+        scanf("%d",&lmax);
+        printf("Enter the maximum quantum number l: ");
+        scanf("%d",&nmax);
+        printf("Enter rmax: ");
+        scanf("%lf",&rmax);
+        printf("Enter the number of gridpoints: ");
+        scanf("%d",&xmax);
+    }
     
     // creates data folder and files to save data
     make_directory("Data");
@@ -45,7 +54,7 @@ int main(int argc, char** argv)
         spectra[l] = numerov(nmax, l, xmax, rmax, 0.13, V_ho);
     
     
-    // save results to a csv file
+    // save energy eigenvalues to csv file
     char filename[32];
     snprintf(filename, 32, "./eigenvalues.csv");
     FILE * eigenvalues;
@@ -56,8 +65,9 @@ int main(int argc, char** argv)
     fprintf(eigenvalues, "l, n, E\n");
     for (int l=0; l<=lmax; l++)
         for (int n=0; n<nmax; n++)
-            fprintf(eigenvalues, "%d, %d, %0.9f\n", l, n, spectra[l].EE[n]);
-        
+            fprintf(eigenvalues, "%d, %d, %0.12f\n", l, n, spectra[l].EE[n]);
+    
+    // save eigenvectors to csv file
     FILE * eigenvectors;
     eigenvectors = fopen("./eigenvectors.csv", "w");
     if (eigenvectors == NULL)
@@ -214,10 +224,7 @@ int nodeNumber(double * eigv, size_t N)
     return nodes;
 }
 
-void curaDiscontinuità(double * y, int xc)
-{
-    
-}
+
 
 
 
