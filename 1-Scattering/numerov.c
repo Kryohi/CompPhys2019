@@ -3,7 +3,7 @@
  * fix inversione di segno appena dopo autovalori
  * cosa serve cambiare per scattering
  * 
- */
+*/
 
 #include "numerov.h"
 #include "matematicose.c"
@@ -17,15 +17,24 @@ int main(int argc, char** argv)
     int nmax, lmax, xmax;
     double rmax;
     
-    // asks user for grid parameters and quantum numbers
-    printf("Enter the maximum quantum number n: ");
-    scanf("%d",&nmax);
-    printf("Enter the maximum quantum number l: ");
-    scanf("%d",&lmax);
-    printf("Enter rmax: ");
-    scanf("%lf",&rmax);
-    printf("Enter the number of gridpoints: ");
-    scanf("%d",&xmax);
+    if (argc == 5)  
+    {
+        lmax = (int)strtol(argv[1], NULL, 10);
+        nmax = (int)strtol(argv[2], NULL, 10);
+        rmax = (float)strtol(argv[3], NULL, 10);
+        xmax = (int)strtol(argv[4], NULL, 10);
+    }
+    else    {
+        // asks user for grid parameters and quantum numbers
+        printf("Enter the maximum quantum number n: ");
+        scanf("%d",&lmax);
+        printf("Enter the maximum quantum number l: ");
+        scanf("%d",&nmax);
+        printf("Enter rmax: ");
+        scanf("%lf",&rmax);
+        printf("Enter the number of gridpoints: ");
+        scanf("%d",&xmax);
+    }
     
     // creates data folder and files to save data
     make_directory("Data");
@@ -45,7 +54,7 @@ int main(int argc, char** argv)
         spectra[l] = numerov(nmax, l, xmax, rmax, 0.13, V_ho);
     
     
-    // save results to a csv file
+    // save energy eigenvalues to csv file
     char filename[32];
     snprintf(filename, 32, "./eigenvalues.csv");
     FILE * eigenvalues;
@@ -56,8 +65,9 @@ int main(int argc, char** argv)
     fprintf(eigenvalues, "l, n, E\n");
     for (int l=0; l<=lmax; l++)
         for (int n=0; n<nmax; n++)
-            fprintf(eigenvalues, "%d, %d, %0.9f\n", l, n, spectra[l].EE[n]);
-        
+            fprintf(eigenvalues, "%d, %d, %0.12f\n", l, n, spectra[l].EE[n]);
+    
+    // save eigenvectors to csv file
     FILE * eigenvectors;
     eigenvectors = fopen("./eigenvectors.csv", "w");
     if (eigenvectors == NULL)
@@ -68,8 +78,8 @@ int main(int argc, char** argv)
         for (int n=0; n<nmax; n++) {
             fprintf(eigenvectors, "%d, %d", l, n);
             for (int x=0; x<xmax; x++)
-                fprintf(eigenvectors, ", %0.15f", spectra[l].eigfuns[n*xmax+x]);
-            fprintf(eigenvectors, "\n\n\n");
+                fprintf(eigenvectors, ", %0.9f", spectra[l].eigfuns[n*xmax+x]);
+            fprintf(eigenvectors, "\n");
         }
     }
     
@@ -77,24 +87,27 @@ int main(int argc, char** argv)
 }
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
-// Returns 
+// Returns a Spectrum struct
 Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*V)(double))
 {
     Spectrum sp;
     sp.EE = calloc(nmax, sizeof(double));
     sp.eigfuns = calloc(xmax*nmax, sizeof(double));
-    double delta, delta1, delta2, prevdelta=0;
-    double xc_float;
-    int xc; // point of classical barrier
-    int nfound = 0; // number of eigenvalues found;
     double h = rmax/xmax;
+    double xc_float;
+    int xc; // point corresponding to the classical barrier
+    int nfound = 0; // number of eigenvalues found;
     double E=E0(h, rmax, V), E1, E2, E_;
-    double V_[xmax], k2[xmax];
+    double delta, delta1, delta2, prevdelta=0;
+    double V_[xmax], centrifugal[xmax], k2[xmax];
     double yf[xmax], yb[xmax];
     printf("\nFinding the spectrum for l=%d...\n", l);
     
     for (int x=0; x<xmax; x++)
+    {
         V_[x] = V(x*h);
+        centrifugal[x] = l*(l+1)/(x*h*x*h+1e-14);
+    }
     
     // Boundary conditions near 0
     yf[0] = 0;
@@ -107,14 +120,14 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
         xc = (int) round(xc_float/h);
 
         for (int x=0; x<xmax; x++)  
-            k2[x] = (E-V_[x])/h2m - l*(l+1)/(x*h*x*h+1e-14);
+            k2[x] = (E-V_[x])/h2m - centrifugal[x];
         
         // Boundary conditions at rmax
         yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
         yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
         
-        numerov_forward(h, xc, k2, yf);
-        numerov_backward(h, xc, xmax, k2, yb);
+        numerov_forward(h*h, xc, k2, yf);
+        numerov_backward(h*h, xc, xmax, k2, yb);
         //printf("yf[xc-1] = %f,  yf[xc] = %f,  yf[xc+1]=%f\n", yf[xc-1], yf[xc], yf[xc+1]);
         //printf("yb[xc-1] = %f,  yb[xc] = %f,  yb[xc+1]=%f\n", yb[xc-1], yb[xc], yb[xc+1]);
         delta = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
@@ -143,14 +156,13 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
                 xc_float = secant(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
                 xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
                 xc = (int) round(xc_float/h);
-                for (int x=0; x<xmax; x++)  
-                    k2[x] = (E2-V_[x])/h2m - l*(l+1)/(x*h*x*h+1e-14); // could be precalculated except for E2
+                for (int x=0; x<xmax; x++)
+                    k2[x] = (E2-V_[x])/h2m - centrifugal[x];
                 
-                // Boundary conditions at rmax
                 yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
                 yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
-                numerov_forward(h, xc, k2, yf);
-                numerov_backward(h, xc, xmax, k2, yb);
+                numerov_forward(h*h, xc, k2, yf);
+                numerov_backward(h*h, xc, xmax, k2, yb);
                 delta2 = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
                 printf("Delta fine = %f\n", delta2);
                 
@@ -178,16 +190,30 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
  * Differential equation iterative solution
  * aggiunge 2 punti dopo la barriera classica in xc, per calcolare derivata in quel punto
 */ 
-void numerov_forward(double h, int xc, const double * k2, double * y)
+void numerov_forward(double hh, int xc, const double * k2, double * y) 
 {
-    for (int x=2; x<xc+3; x++)
-        y[x] = (y[x-1]*(2 - 5*h*h*k2[x-1]/6) - y[x-2]*(1 + h*h*k2[x-2]/12)) / (1 + h*h*k2[x]/12); // controllare indici
+    double c0 = hh*k2[2]/12;
+    double c_1 = hh*k2[1]/12;
+    double c_2 = hh*k2[0]/12;
+    for (int x=2; x<xc+3; x++)  {
+        y[x] = (y[x-1]*(2-10*c_1) - y[x-2]*(1+c_2)) / (1+c0);
+        c_2 = c_1;
+        c_1 = c0;
+        c0 = hh*k2[x+1]/12;
+    }
 }
 
-void numerov_backward(double h, int xc, int xmax, const double * k2, double * y)
+void numerov_backward(double hh, int xc, int xmax, const double * k2, double * y)
 {
-    for (int x=xmax-3; x>xc-3; x--)
-        y[x] = (y[x+1]*(2 - 5*h*h*k2[x+1]/6) - y[x+2]*(1 + h*h*k2[x+2]/12)) / (1 + h*h*k2[x]/12); // controllare indici
+    double c0 = hh*k2[xmax-3]/12;
+    double c1 = hh*k2[xmax-2]/12;
+    double c2 = hh*k2[xmax-1]/12;
+    for (int x=xmax-3; x>xc-3; x--) {
+        y[x] = (y[x+1]*(2-10*c1) - y[x+2]*(1+c2)) / (1+c0);
+        c2 = c1;
+        c1 = c0;
+        c0 = hh*k2[x-1]/12;
+    }
 }
 
 
@@ -212,7 +238,7 @@ double E0(double h, double rmax, double (*V)(double))
 }
 
 
-int nodeNumber(double * eigv, size_t N)
+int nodeNumber(double * eigv, size_t N) // very rough
 {
     int nodes = 0;
     int step = 10;
@@ -222,10 +248,7 @@ int nodeNumber(double * eigv, size_t N)
     return nodes;
 }
 
-void curaDiscontinuità(double * y, int xc)
-{
-    
-}
+
 
 
 
