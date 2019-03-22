@@ -26,9 +26,9 @@ int main(int argc, char** argv)
     }
     else    {
         // asks user for grid parameters and quantum numbers
-        printf("Enter the maximum quantum number n: ");
-        scanf("%d",&lmax);
         printf("Enter the maximum quantum number l: ");
+        scanf("%d",&lmax);
+        printf("Enter the maximum quantum number n: ");
         scanf("%d",&nmax);
         printf("Enter rmax: ");
         scanf("%lf",&rmax);
@@ -63,9 +63,11 @@ int main(int argc, char** argv)
         perror("error while writing on eigenvalues.csv");
     
     fprintf(eigenvalues, "l, n, E\n");
-    for (int l=0; l<=lmax; l++)
-        for (int n=0; n<nmax; n++)
+    for (int l=0; l<=lmax; l++) {
+        for (int n=0; n<nmax; n++)  {
             fprintf(eigenvalues, "%d, %d, %0.12f\n", l, n, spectra[l].EE[n]);
+        }
+    }
     
     // save eigenvectors to csv file
     FILE * eigenvectors;
