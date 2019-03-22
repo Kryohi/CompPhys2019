@@ -167,6 +167,14 @@ inline double V_ho(double x)
     return x*x/2;
 }
 
+
+
+inline double V_ho(double x, double epsilon, double sigma)
+{
+    return 4*epsilon*(pow(sigma/x,12)-pow(sigma/x,6));
+}
+
+
 double E0(double h, double rmax, double (*V)(double))
 {
     // we'll just assume that the minimum is near 0 ¯\_(ツ)_/¯
