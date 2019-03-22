@@ -1,4 +1,4 @@
-#include "numerov.c" 
+#include "numerov.c"
 
 #define RMAX 10.0
 #define lmax 7

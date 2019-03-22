@@ -54,36 +54,8 @@ int main(int argc, char** argv)
         spectra[l] = numerov(nmax, l, xmax, rmax, 0.13, V_ho);
     
     
-    // save energy eigenvalues to csv file
-    char filename[32];
-    snprintf(filename, 32, "./eigenvalues.csv");
-    FILE * eigenvalues;
-    eigenvalues = fopen(filename, "w");
-    if (eigenvalues == NULL)
-        perror("error while writing on eigenvalues.csv");
-    
-    fprintf(eigenvalues, "l, n, E\n");
-    for (int l=0; l<=lmax; l++) {
-        for (int n=0; n<nmax; n++)  {
-            fprintf(eigenvalues, "%d, %d, %0.12f\n", l, n, spectra[l].EE[n]);
-        }
-    }
-    
-    // save eigenvectors to csv file
-    FILE * eigenvectors;
-    eigenvectors = fopen("./eigenvectors.csv", "w");
-    if (eigenvectors == NULL)
-        perror("error while writing on eigenvectors.csv");
-    
-    fprintf(eigenvectors, "l, n, uvec\n");
-    for (int l=0; l<=lmax; l++) {
-        for (int n=0; n<nmax; n++) {
-            fprintf(eigenvectors, "%d, %d", l, n);
-            for (int x=0; x<xmax; x++)
-                fprintf(eigenvectors, ", %0.9f", spectra[l].eigfuns[n*xmax+x]);
-            fprintf(eigenvectors, "\n");
-        }
-    }
+    // saves to two csv files all the energy levels and the eigenfunctions
+    save2csv(spectra, lmax, nmax, xmax);
     
     return 0;
 }
@@ -124,7 +96,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
         for (int x=0; x<xmax; x++)  
             k2[x] = (E-V_[x])/h2m - centrifugal[x];
         
-        // Boundary conditions at rmax
+        // Boundary conditions at rmax //TODO controllare se ci sono da imporre segni alternanti
         yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
         yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
         
@@ -167,8 +139,8 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
                 numerov_backward(h*h, xc, xmax, k2, yb);
                 delta2 = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
                 printf("Delta fine = %f\n", delta2);
-                
             }
+            
             printf("E%d = %.9f\n\n", nfound, E2);
             sp.EE[nfound] = E2;
             for (int x=0; x<xc; x++)
@@ -227,7 +199,7 @@ inline double V_ho(double x)
 
 
 
-inline double V_ho(double x, double epsilon, double sigma)
+inline double V_lj(double x, double epsilon, double sigma)
 {
     return 4*epsilon*(pow(sigma/x,12)-pow(sigma/x,6));
 }
@@ -250,7 +222,49 @@ int nodeNumber(double * eigv, size_t N) // very rough
     return nodes;
 }
 
-
+void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)
+{
+    // save energy eigenvalues to csv file
+    char filename[32];
+    snprintf(filename, 32, "./eigenvalues.csv");
+    FILE * eigenvalues;
+    eigenvalues = fopen(filename, "w");
+    if (eigenvalues == NULL)
+        perror("error while writing on eigenvalues.csv");
+    
+    fprintf(eigenvalues, "l, n, E\n");
+    for (int l=0; l<=lmax; l++)
+        for (int n=0; n<nmax; n++)
+            fprintf(eigenvalues, "%d, %d, %0.12f\n", l, n, spectra[l].EE[n]);
+        
+    // save eigenvectors to csv file
+    FILE * eigenvectors;
+    eigenvectors = fopen("./eigenvectors.csv", "w");
+    if (eigenvectors == NULL)
+        perror("error while writing on eigenvectors.csv");
+    
+    for (int l=0; l<=lmax; l++)
+        for (int n=0; n<nmax; n++)
+            fprintf(eigenvectors, "y%d%d,", l, n);
+    fprintf(eigenvectors, "\n");
+    for (int l=0; l<=lmax; l++)
+        for (int n=0; n<nmax; n++)
+            fprintf(eigenvectors, "%d,", l);
+    fprintf(eigenvectors, "\n");
+    for (int l=0; l<=lmax; l++)
+        for (int n=0; n<nmax; n++)
+            fprintf(eigenvectors, "%d,", n);
+        
+    fprintf(eigenvectors, "\n");
+    
+    for (int x=0; x<xmax; x++) {
+        for (int l=0; l<=lmax; l++) {
+            for (int n=0; n<nmax; n++)
+                fprintf(eigenvectors, "%0.9f,", spectra[l].eigfuns[n*xmax+x]);
+        }
+        fprintf(eigenvectors, "\n");
+    }
+}
 
 
 
