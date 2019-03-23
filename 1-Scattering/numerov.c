@@ -2,7 +2,7 @@
 /*
  * fix inversione di segno appena dopo autovalori
  * cosa serve cambiare per scattering
- * 
+ * secante per xc più robusta, che prenda secondo zero per LJ
 */
 
 #include "numerov.h"
@@ -73,6 +73,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
     int nfound = 0; // number of eigenvalues found;
     double E=E0(h, rmax, V), E1, E2, E_;
     double delta, delta1, delta2, prevdelta=0;
+    double prev_yc = 0; // needed because when function flips sign the delta also changes sign producing false positives
     double V_[xmax], centrifugal[xmax], k2[xmax];
     double yf[xmax], yb[xmax];
     printf("\nFinding the spectrum for l=%d...\n", l);
@@ -89,10 +90,11 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
     
     while (nfound < nmax)
     {
-        //xc_float = secant(V, E, 1e-6, rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+        //xc_float = secant(V, E, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+        //printf("xc_float %f, vs ho %f\n",xc_float,sqrt(2*E));
         xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
-        xc = (int) round(xc_float/h);
-
+        xc = (int)round(xc_float/h);
+        
         for (int x=0; x<xmax; x++)  
             k2[x] = (E-V_[x])/h2m - centrifugal[x];
         
@@ -105,11 +107,11 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
         //printf("yf[xc-1] = %f,  yf[xc] = %f,  yf[xc+1]=%f\n", yf[xc-1], yf[xc], yf[xc+1]);
         //printf("yb[xc-1] = %f,  yb[xc] = %f,  yb[xc+1]=%f\n", yb[xc-1], yb[xc], yb[xc+1]);
         delta = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
-        //printf("derforward = %f,  derback = %f\n", der3(yf,xc,h)/yf[xc], der3(yb,xc,h)/yb[xc]);
+        //printf("derforward = %f,  derback = %f\n", der3(yf,xc,h), der3(yb,xc,h)/yb[xc]);
         printf("E = %f\tDelta rough = %f\n", E, delta);
         
         // If there is a change in sign, start the finer search of the 0 of delta(E) with the secant method
-        if (delta*prevdelta < 0)
+        if (delta*prevdelta < 0 && yf[xc]*prev_yc > 0)
         {
             printf("\nFound a point of inversion!\n");
             E1 = E - Estep; // store the previous value of E, before the change of sign
@@ -125,11 +127,15 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
                 E1 = E_;
                 delta1 = delta2;
                 printf("E = %f\tdelta2 = %f\n", E2, delta2);
+                if (E2 > V_[xmax-1]) perror("\n!!! Energy has exploded over limits !!! \n");
+                if (E2 < 0) perror("\n!!! Energy is negative !!! \n");
                 
                 // Calculation of the next delta2 value
-                xc_float = secant(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
-                xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
-                xc = (int) round(xc_float/h);
+                //xc_float = secant(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+                //printf("xc_float %f, vs ho %f\n",xc_float,sqrt(2*E2));
+                xc_float = sqrt(2*E2); // !!!! vale solo per armonico !!!!
+                xc = (int)round(xc_float/h);
+                printf("xc %d\n",xc);
                 for (int x=0; x<xmax; x++)
                     k2[x] = (E2-V_[x])/h2m - centrifugal[x];
                 
@@ -138,10 +144,10 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
                 numerov_forward(h*h, xc, k2, yf);
                 numerov_backward(h*h, xc, xmax, k2, yb);
                 delta2 = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
-                printf("Delta fine = %f\n", delta2);
             }
             
             printf("E%d = %.9f\n\n", nfound, E2);
+            // Saves the eigenstate found
             sp.EE[nfound] = E2;
             for (int x=0; x<xc; x++)
                 sp.eigfuns[xmax*nfound + x] = yf[x];
@@ -151,6 +157,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
         }
         
         prevdelta = delta;
+        prev_yc = yf[xc];
         E += Estep;
         
         if (E>V_[xmax-1])
@@ -208,7 +215,7 @@ inline double V_lj(double x, double epsilon, double sigma)
 double E0(double h, double rmax, double (*V)(double))
 {
     // we'll just assume that the minimum is near 0 ¯\_(ツ)_/¯
-    return V(1e-2);
+    return V(1e-1);
 }
 
 
