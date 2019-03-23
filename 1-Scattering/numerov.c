@@ -1,8 +1,9 @@
 // TODO
 /*
- * fix inversione di segno appena dopo autovalori
  * cosa serve cambiare per scattering
  * secante per xc più robusta, che prenda secondo zero per LJ
+ * oppure passare a Numerov funzione precalcolata per tipo di potenziale?
+ * sostituire E0 con un mini gradient-descent
 */
 
 #include "numerov.h"
@@ -68,14 +69,14 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
     sp.EE = calloc(nmax, sizeof(double));
     sp.eigfuns = calloc(xmax*nmax, sizeof(double));
     double h = rmax/xmax;
-    double xc_float;
-    int xc; // point corresponding to the classical barrier
+    double xc_float; int xc; // point corresponding to the classical barrier
     int nfound = 0; // number of eigenvalues found;
     double E=E0(h, rmax, V), E1, E2, E_;
-    double delta, delta1, delta2, prevdelta=0;
+    double delta, delta1, delta2, prevdelta=0;  // difference in the forward and backward log-derivatives
     double prev_yc = 0; // needed because when function flips sign the delta also changes sign producing false positives
     double V_[xmax], centrifugal[xmax], k2[xmax];
-    double yf[xmax], yb[xmax];
+    double yf[xmax], yb[xmax];  // calculated functions, respectively before xc and after xc
+    
     printf("\nFinding the spectrum for l=%d...\n", l);
     
     for (int x=0; x<xmax; x++)
@@ -90,9 +91,9 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
     
     while (nfound < nmax)
     {
-        //xc_float = secant(V, E, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+        xc_float = secant(V, E, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
         //printf("xc_float %f, vs ho %f\n",xc_float,sqrt(2*E));
-        xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
+        //xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
         xc = (int)round(xc_float/h);
         
         for (int x=0; x<xmax; x++)  
@@ -104,9 +105,9 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
         
         numerov_forward(h*h, xc, k2, yf);
         numerov_backward(h*h, xc, xmax, k2, yb);
+        delta = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
         //printf("yf[xc-1] = %f,  yf[xc] = %f,  yf[xc+1]=%f\n", yf[xc-1], yf[xc], yf[xc+1]);
         //printf("yb[xc-1] = %f,  yb[xc] = %f,  yb[xc+1]=%f\n", yb[xc-1], yb[xc], yb[xc+1]);
-        delta = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
         //printf("derforward = %f,  derback = %f\n", der3(yf,xc,h), der3(yb,xc,h)/yb[xc]);
         printf("E = %f\tDelta rough = %f\n", E, delta);
         
@@ -131,9 +132,9 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
                 if (E2 < 0) perror("\n!!! Energy is negative !!! \n");
                 
                 // Calculation of the next delta2 value
-                //xc_float = secant(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+                xc_float = secant(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
                 //printf("xc_float %f, vs ho %f\n",xc_float,sqrt(2*E2));
-                xc_float = sqrt(2*E2); // !!!! vale solo per armonico !!!!
+                //xc_float = sqrt(2*E2); // !!!! vale solo per armonico !!!!
                 xc = (int)round(xc_float/h);
                 printf("xc %d\n",xc);
                 for (int x=0; x<xmax; x++)
