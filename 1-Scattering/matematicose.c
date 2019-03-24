@@ -184,6 +184,19 @@ double der5(double * F, int x, double h)
     return (-F[x+2] + 8*F[x+1] - 8*F[x-1] + F[x-2])/(12*h);
 }
 
+double integrale_simpson(double *fun, int xmax, double h){
+    //xmax should be even, given the algorithm used, and the value of the vector should be calculated equally spaced by h
+    double integral;
+
+    integral = 0.;
+    double i;
+    for(i = 1; i < xmax-1; i+2 ) {
+        integral += h*(fun[i-1] + 4.*fun[i]+fun[i+h])/3.;
+    }
+    
+    return integral;
+}
+
 
 
 
