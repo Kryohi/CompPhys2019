@@ -110,12 +110,12 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
         //printf("yf[xc-1] = %f,  yf[xc] = %f,  yf[xc+1]=%f\n", yf[xc-1], yf[xc], yf[xc+1]);
         //printf("yb[xc-1] = %f,  yb[xc] = %f,  yb[xc+1]=%f\n", yb[xc-1], yb[xc], yb[xc+1]);
         //printf("derforward = %f,  derback = %f\n", der3(yf,xc,h), der3(yb,xc,h)/yb[xc]);
-        printf("E = %f\tDelta rough = %f\n", E, delta);
+        //printf("E = %f\tDelta rough = %f\n", E, delta);
         
         // If there is a change in sign, start the finer search of the 0 of delta(E) with the secant method
         if (delta*prevdelta < 0 && yf[xc]*prev_yc > 0)
         {
-            printf("\nFound a point of inversion!\n");
+            printf("\nFound a point of inversion at %f - %f\n", E, E-Estep);
             E1 = E - Estep; // store the previous value of E, before the change of sign
             E2 = E;
             delta1 = prevdelta;
@@ -134,10 +134,9 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
                 
                 // Calculation of the next delta2 value
                 xc_float = findzero_last(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
-                //printf("xc_float %f, vs ho %f\n",xc_float,sqrt(2*E2));
                 //xc_float = sqrt(2*E2); // !!!! vale solo per armonico !!!!
                 xc = (int)round(xc_float/h);
-                printf("xc %d\n",xc);
+                
                 for (int x=0; x<xmax; x++)
                     k2[x] = (E2-V_[x])/h2m - centrifugal[x];
                 
@@ -244,7 +243,6 @@ double E0(double (*V)(double), double h, double rmax)
 }
 
 
-
 int nodeNumber(const double * eigv, size_t N) // very rough
 {
     int nodes = 0;
@@ -255,9 +253,13 @@ int nodeNumber(const double * eigv, size_t N) // very rough
     return nodes;
 }
 
-double normalizationFactor(const double * eigv, size_t N)
+double normalizationFactor(const double * eigv, double h, size_t N)
 {
-    return 0;
+    double intgr = 0.;
+    for(int i = 2; i < N-1; i++) {
+        intgr += h*(eigv[i] + 4*eigv[i] + eigv[i+1])/3;
+    }
+    return intgr;
 }
 
 void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)
@@ -281,24 +283,37 @@ void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)
     if (eigenvectors == NULL)
         perror("error while writing on eigenvectors.csv");
     
-    for (int l=0; l<=lmax; l++)
-        for (int n=0; n<nmax; n++)
-            fprintf(eigenvectors, "y%d%d,", l, n);
-    fprintf(eigenvectors, "\n");
-    for (int l=0; l<=lmax; l++)
-        for (int n=0; n<nmax; n++)
-            fprintf(eigenvectors, "%d,", l);
-    fprintf(eigenvectors, "\n");
-    for (int l=0; l<=lmax; l++)
-        for (int n=0; n<nmax; n++)
-            fprintf(eigenvectors, "%d,", n);
+    fprintf(eigenvectors, "y%d%d", 0, 0);
+    for (int l=0; l<=lmax; l++) {
+        for (int n=0; n<nmax; n++)  {
+            if (!(l==0 && n==0))
+                fprintf(eigenvectors, ",y%d%d", l, n);
+        }
+    }
+    fprintf(eigenvectors, "\n0");
+    for (int l=0; l<=lmax; l++) {
+        for (int n=0; n<nmax; n++)  {
+            if (!(l==0 && n==0))
+                fprintf(eigenvectors, ",%d", l);
+        }
+    }
+    fprintf(eigenvectors, "\n0");
+    for (int l=0; l<=lmax; l++) {
+        for (int n=0; n<nmax; n++)  {
+            if (!(l==0 && n==0))
+                fprintf(eigenvectors, ",%d", n);
+        }
+    }
         
     fprintf(eigenvectors, "\n");
     
     for (int x=0; x<xmax; x++) {
+        fprintf(eigenvectors, "%0.9f", spectra[0].eigfuns[0*xmax+x]);
         for (int l=0; l<=lmax; l++) {
-            for (int n=0; n<nmax; n++)
-                fprintf(eigenvectors, "%0.9f,", spectra[l].eigfuns[n*xmax+x]);
+            for (int n=0; n<nmax; n++)  {
+                if (!(l==0 && n==0))
+                    fprintf(eigenvectors, ",%0.9f", spectra[l].eigfuns[n*xmax+x]);
+            }
         }
         fprintf(eigenvectors, "\n");
     }
