@@ -20,7 +20,7 @@ double secant(double (*f)(double), double c, double x1, double x2, double inf, d
 void fast_bessel(double x, double lmax, double * J);
 double der3(double * F, int x, double h);
 double der5(double * F, int x, double h);
-
+double integrale_simpson(double *fun, int xmax, double h)
 
 
 inline double sum(const double * A, size_t length)   
