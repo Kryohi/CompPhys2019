@@ -13,57 +13,10 @@
 // hbar/2m, to change to LJ natural units at point 4
 #define h2m 0.5
 
-int main(int argc, char** argv)
-{
-    int nmax, lmax, xmax;
-    double rmax;
-    
-    if (argc == 5)
-    {
-        lmax = (int)strtol(argv[1], NULL, 10);
-        nmax = (int)strtol(argv[2], NULL, 10);
-        rmax = (float)strtol(argv[3], NULL, 10);
-        xmax = (int)strtol(argv[4], NULL, 10);
-    }
-    else    {
-        // asks user for grid parameters and quantum numbers
-        printf("Enter the maximum quantum number l: ");
-        scanf("%d",&lmax);
-        printf("Enter the maximum quantum number n: ");
-        scanf("%d",&nmax);
-        printf("Enter rmax: ");
-        scanf("%lf",&rmax);
-        printf("Enter the number of gridpoints: ");
-        scanf("%d",&xmax);
-    }
-    
-    // creates data folder and files to save data
-    make_directory("Data");
-    chdir("Data");
-    
-    // creates array of structs with the results, one set for each value of l
-    struct Spectrum spectra[lmax+1];
-    for (int l=0; l<=lmax; l++) {
-        spectra[l].xmax = xmax;
-        spectra[l].nmax = nmax;
-        spectra[l].EE = calloc(nmax, sizeof(double));
-        spectra[l].eigfuns = calloc(xmax*nmax, sizeof(double));
-    }
-
-    // Iterates the Numerov algorithm for different quantum numbers
-    for (int l=0; l<=lmax; l++)
-        spectra[l] = numerov(nmax, l, xmax, rmax, 0.13, V_ho);
-    
-    
-    // saves to two csv files all the energy levels and the eigenfunctions
-    save2csv(spectra, lmax, nmax, xmax);
-    
-    return 0;
-}
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns a Spectrum struct
-Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*V)(double))
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool normalize, double (*V)(double))
 {
     Spectrum sp;
     sp.EE = calloc(nmax, sizeof(double));
@@ -154,6 +107,13 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
                 sp.eigfuns[xmax*nfound + x] = yf[x];
             for (int x=xc; x<xmax; x++)
                 sp.eigfuns[xmax*nfound + x] = yb[x] * yf[xc]/yb[xc]; //impose continuity
+            
+            if (normalize==true)    {
+                double norm = normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1));
+                for (int x = xmax*nfound; x < xmax*(nfound+1); x++)
+                    sp.eigfuns[x] = sp.eigfuns[x] / norm;
+            }
+                
             nfound++;
         }
         
@@ -253,13 +213,14 @@ int nodeNumber(const double * eigv, size_t N) // very rough
     return nodes;
 }
 
-double normalizationFactor(const double * eigv, double h, size_t N)
+double normalizationFactor(const double * eigv, double h, int x1, int x2)
 {
-    double intgr = 0.;
-    for(int i = 2; i < N-1; i++) {
-        intgr += h*(eigv[i] + 4*eigv[i] + eigv[i+1])/3;
-    }
-    return intgr;
+    double sqmod[x2-x1];
+    
+    for(int i=x1; i<x2; i++)
+        sqmod[i-x1] = eigv[i]*eigv[i];
+    
+    return integrale_simpson(sqmod, x2-x1, h);
 }
 
 void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)

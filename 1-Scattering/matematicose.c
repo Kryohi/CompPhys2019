@@ -21,8 +21,8 @@ double findzero_last(double (*f)(double), double c, double x1, double x2, double
 void fast_bessel(double x, double lmax, double * J);
 double der3(double * F, int x, double h);
 double der5(double * F, int x, double h);
-double integrale_simpson(double *fun, int xmax, double h)
 double der5_c(double (*f)(double), double x, double h);
+double integrale_simpson(double *fun, int xmax, double h);
 
 inline double sum(const double * A, size_t length)   
 {
@@ -195,23 +195,21 @@ double der5(double * F, int x, double h)
     return (-F[x+2] + 8*F[x+1] - 8*F[x-1] + F[x-2])/(12*h);
 }
 
+double der5_c(double (*f)(double), double x, double h)
+{
+    return (-f(x+2*h) + 8*f(x+h) - 8*f(x-h) + f(x-2*h))/(12*h);
+}
+
+
 double integrale_simpson(double *fun, int xmax, double h){
     //xmax should be even, given the algorithm used, and the value of the vector should be calculated equally spaced by h
-    double integral;
+    double integral = 0.;
 
-    integral = 0.;
-    double i;
-    for(i = 1; i < xmax-1; i+2 ) {
-        integral += h*(fun[i-1] + 4.*fun[i]+fun[i+h])/3.;
+    for(int i = 1; i < xmax-1; i+=2) {
+        integral += h*(fun[i-1] + 4.*fun[i]+fun[i+1])/3.;
     }
     
     return integral;
 }
 
 
-double der5_c(double (*f)(double), double x, double h)
-{
-    return (-f(x+2*h) + 8*f(x+h) - 8*f(x-h) + f(x-2*h))/(12*h);
-}
-
- 
