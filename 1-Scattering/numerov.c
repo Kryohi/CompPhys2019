@@ -1,9 +1,9 @@
 // TODO
 /*
  * cosa serve cambiare per scattering
- * secante per xc più robusta, che prenda secondo zero per LJ
+ * migliorare find_zero in modo che pigli 0 appena dopo xc?
  * oppure passare a Numerov funzione precalcolata per tipo di potenziale?
- * sostituire E0 con un mini gradient-descent
+ * aggiungere stocasticità a mini gradient-descent in E0
 */
 
 #include "numerov.h"
@@ -18,7 +18,7 @@ int main(int argc, char** argv)
     int nmax, lmax, xmax;
     double rmax;
     
-    if (argc == 5)  
+    if (argc == 5)
     {
         lmax = (int)strtol(argv[1], NULL, 10);
         nmax = (int)strtol(argv[2], NULL, 10);
@@ -70,8 +70,9 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
     sp.eigfuns = calloc(xmax*nmax, sizeof(double));
     double h = rmax/xmax;
     double xc_float; int xc; // point corresponding to the classical barrier
-    int nfound = 0; // number of eigenvalues found;
-    double E=E0(h, rmax, V), E1, E2, E_;
+    int nfound = 0; // number of eigenvalues found
+    double E = E0(V,h,rmax)+V(1e-1); // passare come argomento a Numerov?
+    double E1, E2, E_;
     double delta, delta1, delta2, prevdelta=0;  // difference in the forward and backward log-derivatives
     double prev_yc = 0; // needed because when function flips sign the delta also changes sign producing false positives
     double V_[xmax], centrifugal[xmax], k2[xmax];
@@ -91,7 +92,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
     
     while (nfound < nmax)
     {
-        xc_float = secant(V, E, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+        xc_float = findzero_last(V, E, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
         //printf("xc_float %f, vs ho %f\n",xc_float,sqrt(2*E));
         //xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
         xc = (int)round(xc_float/h);
@@ -99,7 +100,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
         for (int x=0; x<xmax; x++)  
             k2[x] = (E-V_[x])/h2m - centrifugal[x];
         
-        // Boundary conditions at rmax //TODO controllare se ci sono da imporre segni alternanti
+        // Boundary conditions at rmax
         yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
         yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
         
@@ -132,7 +133,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, double (*
                 if (E2 < 0) perror("\n!!! Energy is negative !!! \n");
                 
                 // Calculation of the next delta2 value
-                xc_float = secant(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+                xc_float = findzero_last(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
                 //printf("xc_float %f, vs ho %f\n",xc_float,sqrt(2*E2));
                 //xc_float = sqrt(2*E2); // !!!! vale solo per armonico !!!!
                 xc = (int)round(xc_float/h);
@@ -206,21 +207,45 @@ inline double V_ho(double x)
 }
 
 
-
 inline double V_lj(double x, double epsilon, double sigma)
 {
     return 4*epsilon*(pow(sigma/x,12)-pow(sigma/x,6));
 }
 
+inline double V_fastlj(double dr2)
+{
+     double dr6 = dr2*dr2*dr2;
+     return 4*(1.0/(dr6*dr6) - 1.0/dr6);
+}
 
-double E0(double h, double rmax, double (*V)(double))
+
+double E0_stupid(double (*V)(double), double h, double rmax)
 {
     // we'll just assume that the minimum is near 0 ¯\_(ツ)_/¯
     return V(1e-1);
 }
 
+// Very basic gradient descent toward the potential minimum (currently the nearest minimum to the middle of the grid)
+double E0(double (*V)(double), double h, double rmax)
+{
+    double r = rmax/2; // starting point
+    double scale = fabs(V(rmax)-V(r)); // to get an order of magnitude of the variation of V 
+    double gamma = scale/500;
+    double grad = 10.;
+    
+    while (fabs(grad) > 1e-5)
+    {
+        grad = der5_c(V,r,h);
+        r -= gamma*grad;
+        //printf("grad = %f\tr=%f\n", grad, r);
+    }
+    
+    return V(r);
+}
 
-int nodeNumber(double * eigv, size_t N) // very rough
+
+
+int nodeNumber(const double * eigv, size_t N) // very rough
 {
     int nodes = 0;
     int step = 10;
@@ -228,6 +253,11 @@ int nodeNumber(double * eigv, size_t N) // very rough
         if (eigv[x]*eigv[x-step] < 0) nodes++;
         
     return nodes;
+}
+
+double normalizationFactor(const double * eigv, size_t N)
+{
+    return 0;
 }
 
 void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)

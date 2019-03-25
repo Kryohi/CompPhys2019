@@ -17,11 +17,12 @@ void elforel(const double *A, const double * B, double * C, size_t length);
 bool isApproxEqual(double a, double b);
 double zerosecant(double (*f)(double), double x1, double x2, double inf, double sup);
 double secant(double (*f)(double), double c, double x1, double x2, double inf, double sup);
+double findzero_last(double (*f)(double), double c, double x1, double x2, double inf, double sup);
 void fast_bessel(double x, double lmax, double * J);
 double der3(double * F, int x, double h);
 double der5(double * F, int x, double h);
 double integrale_simpson(double *fun, int xmax, double h)
-
+double der5_c(double (*f)(double), double x, double h);
 
 inline double sum(const double * A, size_t length)   
 {
@@ -138,6 +139,16 @@ double secant(double (*f)(double), double c, double x1, double x2, double inf, d
     return x2;
 }
 
+double findzero_last(double (*f)(double), double c, double x1, double x2, double inf, double sup)
+{
+    double step = (x2-x1)/20;
+    for (double x=x2; x>x1; x -= step)
+        if ((f(x)-c)*(f(x-step)-c) < 0)
+            return secant(f, c, x-step, x, inf, sup);
+    perror("no zeros found");
+    return -1;
+}
+
 void fast_bessel(double x, double lmax, double * J)
 {
     //double j_1 = cos(x)/x;
@@ -198,7 +209,9 @@ double integrale_simpson(double *fun, int xmax, double h){
 }
 
 
-
-
+double der5_c(double (*f)(double), double x, double h)
+{
+    return (-f(x+2*h) + 8*f(x+h) - 8*f(x-h) + f(x-2*h))/(12*h);
+}
 
  
