@@ -110,8 +110,11 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
             
             if (normalize==true)    {
                 double norm = normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1));
+                printf("normalization=%f", norm);
                 for (int x = xmax*nfound; x < xmax*(nfound+1); x++)
                     sp.eigfuns[x] = sp.eigfuns[x] / norm;
+                double norm1 = normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1));
+                printf("normalization=%1.10f", norm1);
             }
                 
             nfound++;

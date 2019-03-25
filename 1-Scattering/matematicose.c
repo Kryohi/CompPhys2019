@@ -205,7 +205,7 @@ double integrale_simpson(double *fun, int xmax, double h){
     //xmax should be even, given the algorithm used, and the value of the vector should be calculated equally spaced by h
     double integral = 0.;
 
-    for(int i = 1; i < xmax-1; i+=2) {
+    for(int i = 1; i <= xmax-1; i+=2) {
         integral += h*(fun[i-1] + 4.*fun[i]+fun[i+1])/3.;
     }
     
