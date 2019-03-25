@@ -15,11 +15,6 @@
 #include <fftw3.h>
 
 
-typedef struct DoubleArray { 
-    size_t length;
-    double *data;
-} DoubleArray;
-
 typedef struct Spectrum { 
     size_t xmax;
     int nmax;
