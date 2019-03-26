@@ -4,9 +4,10 @@
 #define lmax 6
 
 /* TODO 
- * modificare potenziale in modo da spostare barriera + vicina a 0?
+ * modificare potenziale in modo da spostare barriera + vicina a 0? difficile perché in numerov entra la x
  * oppure, meglio, modificare bc[] in modo che possa avere lungh arbitraria
- * precalcolare funzione del punto 5 fino a rlow e passarla a Numerov
+ * oppure, far partire numerov da nuovo parametro xlow
+ * precalcolare funzione del punto 5 fino a rlow e passarla a Numerov / aggiungerla a autofunzione finale
  * 
  */
 

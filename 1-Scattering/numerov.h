@@ -22,9 +22,15 @@ typedef struct Spectrum {
     double * eigfuns;  // xmax*nmax 1D array
 } Spectrum;
 
+typedef struct dArray { 
+    size_t length;
+    double * data;
+} dArray;
 
-Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool normalize, double *bc0, double (*f)(double));
-void numerov_forward(double h, int xc, const double * k2, double * y);
+
+
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool normalize, dArray bc0, double (*f)(double));
+void numerov_forward(double h, int xc, int xmin, const double * k2, double * y);
 void numerov_backward(double h, int xc, int xmax, const double * k2, double * y);
 double V_ho(double x);
 double E0(double (*V)(double), double h, double rmax);
