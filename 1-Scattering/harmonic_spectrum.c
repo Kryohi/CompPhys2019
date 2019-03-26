@@ -1,9 +1,12 @@
 #include "numerov.c"
+#include "misccose.c"
 
 int main(int argc, char** argv)
 {
     int nmax, lmax, xmax;
     double rmax;
+    double bc[2]; // boundary conditions at 0, they depend on V
+    bc[0] = 0;
     
     if (argc == 5)
     {
@@ -38,8 +41,10 @@ int main(int argc, char** argv)
     }
 
     // Iterates the Numerov algorithm for different quantum numbers
-    for (int l=0; l<=lmax; l++)
-        spectra[l] = numerov(nmax, l, xmax, rmax, 0.13, true, V_ho);
+    for (int l=0; l<=lmax; l++) {
+        bc[1] = pow(rmax/xmax,l);
+        spectra[l] = numerov(nmax, l, xmax, rmax, 0.13, true, bc, V_ho);
+    }
     
     
     // saves to two csv files all the energy levels and the eigenfunctions

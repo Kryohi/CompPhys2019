@@ -4,11 +4,11 @@
  * migliorare find_zero in modo che pigli 0 appena dopo xc?
  * oppure passare a Numerov funzione precalcolata per tipo di potenziale?
  * aggiungere stocasticità a mini gradient-descent in E0
+ * verificare funzionamento nodeNumber
 */
 
 #include "numerov.h"
 #include "matematicose.c"
-#include "misccose.c"
 
 // hbar/2m, to change to LJ natural units at point 4
 #define h2m 0.5
@@ -16,7 +16,7 @@
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns a Spectrum struct
-Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool normalize, double (*V)(double))
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool normalize, double * bc0, double (*V)(double))
 {
     Spectrum sp;
     sp.EE = calloc(nmax, sizeof(double));
@@ -40,8 +40,8 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
     }
     
     // Boundary conditions near 0
-    yf[0] = 0;
-    yf[1] = pow(h,l);
+    yf[0] = bc0[0];
+    yf[1] = bc0[1];
     
     while (nfound < nmax)
     {
@@ -68,7 +68,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
         // If there is a change in sign, start the finer search of the 0 of delta(E) with the secant method
         if (delta*prevdelta < 0 && yf[xc]*prev_yc > 0)
         {
-            printf("\nFound a point of inversion at %f - %f\n", E, E-Estep);
+            printf("\nFound a point of inversion at %f - %f\n", E-Estep, E);
             E1 = E - Estep; // store the previous value of E, before the change of sign
             E2 = E;
             delta1 = prevdelta;
@@ -109,7 +109,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
                 sp.eigfuns[xmax*nfound + x] = yb[x] * yf[xc]/yb[xc]; //impose continuity
             
             if (normalize==true)    {
-                double norm = normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1));
+                double norm = sqrt(normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1)));
                 for (int x = xmax*nfound; x < xmax*(nfound+1); x++)
                     sp.eigfuns[x] = sp.eigfuns[x] / norm;
             }
@@ -206,7 +206,7 @@ double E0(double (*V)(double), double h, double rmax)
 int nodeNumber(const double * eigv, size_t N) // very rough
 {
     int nodes = 0;
-    int step = 10;
+    int step = (int)round(N/1000);
     for (int x=0; x<N; x+=step)
         if (eigv[x]*eigv[x-step] < 0) nodes++;
         
