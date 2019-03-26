@@ -1,15 +1,24 @@
 #include "numerov.c"
 #include "misccose.c"
 
-#define RMAX 10.0
-#define lmax 7
+#define lmax 6
 
+/* TODO 
+ * modificare potenziale in modo da spostare barriera + vicina a 0?
+ * oppure, meglio, modificare bc[] in modo che possa avere lungh arbitraria
+ * precalcolare funzione del punto 5 fino a rlow e passarla a Numerov
+ * 
+ */
 
 int main(int argc, char** argv)
 {
+    
+    double rmax = 7*sigma;
+    
     double c, sigma_tot;
     double delta[lmax];
     double J1[lmax], double N1[lmax], double J2[lmax], double N2[lmax];
+    
     
     
     c = y[x1]*x2 / (y[x2]*x1*h);
