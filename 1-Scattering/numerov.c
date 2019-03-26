@@ -111,7 +111,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
             if (normalize==true)    {
                 double norm = normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1));
                 for (int x = xmax*nfound; x < xmax*(nfound+1); x++)
-                    sp.eigfuns[x] = sp.eigfuns[x] / norm;
+                    sp.eigfuns[x] = sp.eigfuns[x] / sqrt(norm);
             }
                 
             nfound++;

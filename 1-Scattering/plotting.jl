@@ -1,4 +1,4 @@
-using Statistics, PyCall, Plots, DataFrames, CSVFiles, QuadGK
+using Statistics, PyCall, Plots, DataFrames, CSVFiles, QuadGK, Cubature
 pyplot()
 
 ## CSV import
@@ -10,6 +10,7 @@ df_u = DataFrame(load("eigenvectors.csv"))
 l = 0
 X = LinRange(0, 12, length(df_u.y00)-2)
 u = convert(Matrix, df_u[3:end, (df_u[1,:] .== l) .& (df_u[2,:] .== 0)])
+quadgk(sin.(X), X[1], X[end], order=8, maxevals=10^8)[1]
 P0 = Plots.plot(X, u, label=string("u",l,0), show=true)
 
 for n ∈ 1:4
