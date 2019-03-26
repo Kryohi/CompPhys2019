@@ -1,6 +1,6 @@
 // TODO
 /*
- * cosa serve cambiare per scattering
+ * verificare modifica a boundary cond
  * migliorare find_zero in modo che pigli 0 appena dopo xc?
  * oppure passare a Numerov funzione precalcolata per tipo di potenziale?
  * aggiungere stocasticità a mini gradient-descent in E0
@@ -30,10 +30,11 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
     double delta, delta1, delta2, prevdelta=0;  // difference in the forward and backward log-derivatives
     double prev_yc = 0; // needed because when function flips sign the delta also changes sign producing false positives
     double V_[xmax], centrifugal[xmax], k2[xmax];
-    double yf[xmax], yb[xmax];  // calculated functions, respectively before xc and after xc
+    double yf[xmax], yb[xmax];  // calculated function, respectively before xc and after xc
     
     printf("\nFinding the spectrum for l=%d...\n", l);
     
+    // precalculation of the known terms
     for (int x=0; x<xmax; x++)
     {
         V_[x] = V(x*h);
@@ -42,10 +43,11 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
     
     // Boundary conditions near 0
     if (bc0.length < 2) 
-        perror("boundary condition in 0 must contain at least 2 points.\n");
+        perror("\nBoundary condition in 0 must contain at least 2 points.\n");
     for (int x=0; x<bc0.length; x++)
         yf[x] = bc0.data[x];
     
+
     // Iterative process begins
     while (nfound < nmax)
     {
