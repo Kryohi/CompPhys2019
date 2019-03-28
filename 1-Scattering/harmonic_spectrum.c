@@ -1,12 +1,21 @@
 #include "numerov.c"
 #include "misccose.c"
 
+
+// hbar/2m, to change to LJ natural units at point 4
+#define h2m 0.5
+
+
+inline double V_ho(double x)
+{
+    return x*x/2;
+}
+
+
 int main(int argc, char** argv)
 {
     int nmax, lmax, xmax;
     double rmax;
-    double bc[2]; // boundary conditions at 0, they depend on V
-    bc[0] = 0;
     
     if (argc == 5)
     {
@@ -39,10 +48,17 @@ int main(int argc, char** argv)
         spectra[l].EE = calloc(nmax, sizeof(double));
         spectra[l].eigfuns = calloc(xmax*nmax, sizeof(double));
     }
-
+    
+    // Boundary conditions near zero, they depend on V
+    dArray bc;
+    bc.length = 2;
+    bc.data = calloc(2, sizeof(double));
+    bc.data[0] = 0;
+    
+    
     // Iterates the Numerov algorithm for different quantum numbers
     for (int l=0; l<=lmax; l++) {
-        bc[1] = pow(rmax/xmax,l);
+        bc.data[1] = pow(rmax/xmax,l);
         spectra[l] = numerov(nmax, l, xmax, rmax, 0.13, true, bc, V_ho);
     }
     
@@ -50,5 +66,11 @@ int main(int argc, char** argv)
     // saves to two csv files all the energy levels and the eigenfunctions
     save2csv(spectra, lmax, nmax, xmax);
     
+    free(bc.data);
+    for (int l=0; l<=lmax; l++)
+        free(spectra[l].eigfuns);
+        
     return 0;
 }
+
+

@@ -1,6 +1,6 @@
 // TODO
 /*
- * cosa serve cambiare per scattering
+ * verificare modifica a boundary cond
  * migliorare find_zero in modo che pigli 0 appena dopo xc?
  * oppure passare a Numerov funzione precalcolata per tipo di potenziale?
  * aggiungere stocasticità a mini gradient-descent in E0
@@ -10,18 +10,16 @@
 #include "numerov.h"
 #include "matematicose.c"
 
-// hbar/2m, to change to LJ natural units at point 4
-#define h2m 0.5
-
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns a Spectrum struct
-Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool normalize, double * bc0, double (*V)(double))
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool normalize, dArray bc0, double (*V)(double))
 {
     Spectrum sp;
     sp.EE = calloc(nmax, sizeof(double));
     sp.eigfuns = calloc(xmax*nmax, sizeof(double));
     double h = rmax/xmax;
+    int xmin = bc0.length; // usually 2, but must be longer if there are big and high barriers (e.g. scattering)
     double xc_float; int xc; // point corresponding to the classical barrier
     int nfound = 0; // number of eigenvalues found
     double E = E0(V,h,rmax)+V(1e-1); // passare come argomento a Numerov?
@@ -29,10 +27,11 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
     double delta, delta1, delta2, prevdelta=0;  // difference in the forward and backward log-derivatives
     double prev_yc = 0; // needed because when function flips sign the delta also changes sign producing false positives
     double V_[xmax], centrifugal[xmax], k2[xmax];
-    double yf[xmax], yb[xmax];  // calculated functions, respectively before xc and after xc
+    double yf[xmax], yb[xmax];  // calculated function, respectively before xc and after xc
     
     printf("\nFinding the spectrum for l=%d...\n", l);
     
+    // precalculation of the known terms
     for (int x=0; x<xmax; x++)
     {
         V_[x] = V(x*h);
@@ -40,9 +39,13 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
     }
     
     // Boundary conditions near 0
-    yf[0] = bc0[0];
-    yf[1] = bc0[1];
+    if (bc0.length < 2) 
+        perror("\nBoundary condition in 0 must contain at least 2 points.\n");
+    for (int x=0; x<bc0.length; x++)
+        yf[x] = bc0.data[x];
     
+
+    // Iterative process begins
     while (nfound < nmax)
     {
         xc_float = findzero_last(V, E, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
@@ -50,14 +53,14 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
         //xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
         xc = (int)round(xc_float/h);
         
-        for (int x=0; x<xmax; x++)  
+        for (int x=0; x<xmax; x++)  // could probably start from xmin-2
             k2[x] = (E-V_[x])/h2m - centrifugal[x];
         
         // Boundary conditions at rmax
         yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
         yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
         
-        numerov_forward(h*h, xc, k2, yf);
+        numerov_forward(h*h, xc, xmin, k2, yf);
         numerov_backward(h*h, xc, xmax, k2, yb);
         delta = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
         //printf("yf[xc-1] = %f,  yf[xc] = %f,  yf[xc+1]=%f\n", yf[xc-1], yf[xc], yf[xc+1]);
@@ -95,7 +98,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
                 
                 yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
                 yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
-                numerov_forward(h*h, xc, k2, yf);
+                numerov_forward(h*h, xc, xmin, k2, yf);
                 numerov_backward(h*h, xc, xmax, k2, yb);
                 delta2 = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
             }
@@ -132,12 +135,12 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool norm
  * Differential equation iterative solution
  * aggiunge 2 punti dopo la barriera classica in xc, per calcolare derivata in quel punto
 */ 
-void numerov_forward(double hh, int xc, const double * k2, double * y) 
+void numerov_forward(double hh, int xc, int xmin, const double * k2, double * y) 
 {
     double c0 = hh*k2[2]/12;
     double c_1 = hh*k2[1]/12;
     double c_2 = hh*k2[0]/12;
-    for (int x=2; x<xc+3; x++)  {
+    for (int x=xmin; x<xc+3; x++)  {
         y[x] = (y[x-1]*(2-10*c_1) - y[x-2]*(1+c_2)) / (1+c0);
         c_2 = c_1;
         c_1 = c0;
@@ -159,25 +162,6 @@ void numerov_backward(double hh, int xc, int xmax, const double * k2, double * y
 }
 
 
-
-inline double V_ho(double x)
-{
-    return x*x/2;
-}
-
-
-inline double V_lj(double x, double epsilon, double sigma)
-{
-    return 4*epsilon*(pow(sigma/x,12)-pow(sigma/x,6));
-}
-
-inline double V_fastlj(double dr2)
-{
-     double dr6 = dr2*dr2*dr2;
-     return 4*(1.0/(dr6*dr6) - 1.0/dr6);
-}
-
-
 double E0_stupid(double (*V)(double), double h, double rmax)
 {
     // we'll just assume that the minimum is near 0 ¯\_(ツ)_/¯
@@ -188,7 +172,7 @@ double E0_stupid(double (*V)(double), double h, double rmax)
 double E0(double (*V)(double), double h, double rmax)
 {
     double r = rmax/2; // starting point
-    double scale = fabs(V(rmax)-V(r)); // to get an order of magnitude of the variation of V 
+    double scale = fabs(V(rmax)-V(r)); // to get an order of magnitude of the variation of V
     double gamma = scale/500;
     double grad = 10.;
     
