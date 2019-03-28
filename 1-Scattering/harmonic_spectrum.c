@@ -59,7 +59,7 @@ int main(int argc, char** argv)
     // Iterates the Numerov algorithm for different quantum numbers
     for (int l=0; l<=lmax; l++) {
         bc.data[1] = pow(rmax/xmax,l);
-        spectra[l] = numerov(nmax, l, xmax, rmax, 0.13, true, bc, V_ho);
+        spectra[l] = numerov(nmax, l, xmax, rmax, h2m, 0.13, true, bc, V_ho);
     }
     
     
