@@ -10,9 +10,6 @@
 #include "numerov.h"
 #include "matematicose.c"
 
-// hbar/2m, to change to LJ natural units at point 4
-#define h2m 0.5
-
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns a Spectrum struct
@@ -165,25 +162,6 @@ void numerov_backward(double hh, int xc, int xmax, const double * k2, double * y
 }
 
 
-
-inline double V_ho(double x)
-{
-    return x*x/2;
-}
-
-
-inline double V_lj(double x, double epsilon, double sigma)
-{
-    return 4*epsilon*(pow(sigma/x,12)-pow(sigma/x,6));
-}
-
-inline double V_fastlj(double dr2)
-{
-     double dr6 = dr2*dr2*dr2;
-     return 4*(1.0/(dr6*dr6) - 1.0/dr6);
-}
-
-
 double E0_stupid(double (*V)(double), double h, double rmax)
 {
     // we'll just assume that the minimum is near 0 ¯\_(ツ)_/¯
@@ -194,7 +172,7 @@ double E0_stupid(double (*V)(double), double h, double rmax)
 double E0(double (*V)(double), double h, double rmax)
 {
     double r = rmax/2; // starting point
-    double scale = fabs(V(rmax)-V(r)); // to get an order of magnitude of the variation of V 
+    double scale = fabs(V(rmax)-V(r)); // to get an order of magnitude of the variation of V
     double gamma = scale/500;
     double grad = 10.;
     

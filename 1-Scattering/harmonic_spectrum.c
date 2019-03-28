@@ -1,6 +1,17 @@
 #include "numerov.c"
 #include "misccose.c"
 
+
+// hbar/2m, to change to LJ natural units at point 4
+#define h2m 0.5
+
+
+inline double V_ho(double x)
+{
+    return x*x/2;
+}
+
+
 int main(int argc, char** argv)
 {
     int nmax, lmax, xmax;
@@ -61,3 +72,5 @@ int main(int argc, char** argv)
         
     return 0;
 }
+
+
