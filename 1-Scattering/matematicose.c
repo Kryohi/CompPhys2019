@@ -183,7 +183,7 @@ inline void vecBoxMuller(double sigma, size_t length, double * A)
  * 
 */
 
-// numerical derivatives
+// Numerical derivatives
 
 double der3(double * F, int x, double h)
 {
@@ -200,6 +200,8 @@ double der5_c(double (*f)(double), double x, double h)
     return (-f(x+2*h) + 8*f(x+h) - 8*f(x-h) + f(x-2*h))/(12*h);
 }
 
+
+// Numerical integration
 
 double integrale_simpson(double *fun, int xmax, double h){
     //xmax should be even, given the algorithm used, and the value of the vector should be calculated equally spaced by h

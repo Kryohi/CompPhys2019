@@ -29,7 +29,7 @@ typedef struct dArray {
 
 
 
-Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool normalize, dArray bc0, double (*f)(double));
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool normalize, dArray bc0, double (*f)(double));
 void numerov_forward(double h, int xc, int xmin, const double * k2, double * y);
 void numerov_backward(double h, int xc, int xmax, const double * k2, double * y);
 double V_ho(double x);

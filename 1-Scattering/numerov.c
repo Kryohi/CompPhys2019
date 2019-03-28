@@ -2,7 +2,6 @@
 /*
  * verificare modifica a boundary cond
  * migliorare find_zero in modo che pigli 0 appena dopo xc?
- * oppure passare a Numerov funzione precalcolata per tipo di potenziale?
  * aggiungere stocasticità a mini gradient-descent in E0
  * verificare funzionamento nodeNumber
 */
@@ -13,7 +12,7 @@
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns a Spectrum struct
-Spectrum numerov(int nmax, int l, int xmax, double rmax, double Estep, bool normalize, dArray bc0, double (*V)(double))
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool normalize, dArray bc0, double (*V)(double))
 {
     Spectrum sp;
     sp.EE = calloc(nmax, sizeof(double));
