@@ -12,7 +12,7 @@
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns a Spectrum struct
-Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool normalize, dArray bc0, double (*V)(double))
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool HO1D, bool normalize, dArray bc0, double (*V)(double))
 {
     Spectrum sp;
     sp.EE = calloc(nmax, sizeof(double));
@@ -21,7 +21,13 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
     int xmin = bc0.length; // usually 2, but must be longer if there are big and high barriers (e.g. scattering)
     double xc_float; int xc; // point corresponding to the classical barrier
     int nfound = 0; // number of eigenvalues found
-    double E = E0(V,h,rmax)+V(1e-1); // passare come argomento a Numerov?
+    double E;
+    if (HO1D==true){
+         E = E0(V,h,rmax)+V(10.+1e-1); // passare come argomento a Numerov?
+    }
+    if (HO1D==false){
+         E = E0(V,h,rmax)+V(1e-1); // passare come argomento a Numerov?
+    }
     double E1, E2, E_;
     double delta, delta1, delta2, prevdelta=0;  // difference in the forward and backward log-derivatives
     double prev_yc = 0; // needed because when function flips sign the delta also changes sign producing false positives
@@ -38,11 +44,12 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
     }
     
     // Boundary conditions near 0
-    if (bc0.length < 2) 
-        perror("\nBoundary condition in 0 must contain at least 2 points.\n");
-    for (int x=0; x<bc0.length; x++)
-        yf[x] = bc0.data[x];
-    
+    if (HO1D == false){
+        if (bc0.length < 2) 
+            perror("\nBoundary condition in 0 must contain at least 2 points.\n");
+        for (int x=0; x<bc0.length; x++)
+            yf[x] = bc0.data[x];
+    }
 
     // Iterative process begins
     while (nfound < nmax)
@@ -58,6 +65,13 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
         // Boundary conditions at rmax
         yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
         yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
+        
+        if (HO1D==true){
+            // Boundary conditions at rmin
+            yf[0] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
+            yf[1] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
+        }
+        
         
         numerov_forward(h*h, xc, xmin, k2, yf);
         numerov_backward(h*h, xc, xmax, k2, yb);
@@ -170,7 +184,7 @@ double E0_stupid(double (*V)(double), double h, double rmax)
 // Very basic gradient descent toward the potential minimum (currently the nearest minimum to the middle of the grid)
 double E0(double (*V)(double), double h, double rmax)
 {
-    double r = rmax/2; // starting point
+    double r = 3*rmax/4; // starting point
     double scale = fabs(V(rmax)-V(r)); // to get an order of magnitude of the variation of V
     double gamma = scale/500;
     double grad = 10.;
