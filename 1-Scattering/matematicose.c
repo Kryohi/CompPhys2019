@@ -141,20 +141,20 @@ double secant(double (*f)(double), double c, double x1, double x2, double inf, d
 
 double findzero_last(double (*f)(double), double c, double x1, double x2, double inf, double sup)
 {
-    double step = (x2-x1)/20;
-    for (double x=x2; x>x1; x -= step)
-        if ((f(x)-c)*(f(x-step)-c) < 0)
-            return secant(f, c, x-step, x, inf, sup);
+    double step = (x2-x1)/1000;
+    for (double x=x2; x>x1; x -= step)  {
+        //printf("%f\t%f\n", f(x)-c, f(x-step)-c);
+        if ((f(x)-c)*(f(x-step)-c) < 0) {
+            //printf("\ninversion at %f - %f\n", x-step, x);
+            return secant(f, c, x-step, x, inf, sup);}
+    }
     perror("no zeros found");
     return -1;
 }
 
-void fast_bessel(double x, double lmax, double * J)
-{
-    //double j_1 = cos(x)/x;
-    J[0] = sin(x)/x;
-    J[1] = (J[0] - cos(x))/x;
-    
+// J should already provide the 3 starting points
+inline void fast_bessel(double x, double lmax, double * J)
+{    
     for (int l=1; l<lmax; l++)
         J[l+1] = ((2*l+1)/x) * J[l] - J[l-1];
 }
