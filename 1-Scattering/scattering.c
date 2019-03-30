@@ -5,7 +5,7 @@ double V_lj(double x, double epsilon, double sigma);
 double V_fastlj(double dr);
 
 #define lmax 9 // 6
-#define rlow 0.93 // where V = 10 0.923, V=100 0.752, V=1000 0.63
+#define rlow 0.63 // where V = 10 0.923, V=100 0.752, V=1000 0.63
 #define hbar 1.0545718e-34
 #define hbar_eV 4.13566766225e-15
 
@@ -22,8 +22,8 @@ int main(int argc, char** argv)
     double m = 1.66054e-27/(1/83.798 + 1/1.00794); // in kg
     double h2m = hbar*hbar/(2*m); // in un ibrido bastardizzato SI/eV
     h2m = h2m/(epsilon*sigma*sigma); // ridotta
-    double rmax = 7.; // 7*sigma o 7 e basta in unità naturali ?
-    int xmax = 10000; //(int)round(rmax/h);
+    double rmax = 10.01; // Melius est abundare quam deficere
+    int xmax = 16000; // vedi sopra
     double h = rmax/xmax;
     int xmin = (int)round(rlow/h);   // point where V equals 1000 (chosen by looking at when the bound states become uncorrelated to this)
     printf("\nxmin is %d\n", xmin);
@@ -77,8 +77,8 @@ int main(int argc, char** argv)
     
     /*   Scattering   */
     
-    double r1 = 5.9;//*sigma;
-    double r2 = 6.5;//*sigma;
+    double r1 = 5.0;//*sigma;
+    double r2 = r1+.5;//*sigma;
     double kr1, kr2;
     int x1 = (int)round(r1/h);
     int x2 = (int)round(r2/h);
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
     
     printf("scattering amplitude : %f\n", sigma_tot);
     
-    snprintf(filename, 64, "./phaseshifts_rlow%0.4f_rmax%0.4f.csv", rlow, rmax);
+    snprintf(filename, 64, "./phaseshifts_rlow%0.4f_rmax%0.4f.csv", rlow, r2);
     ps = fopen(filename, "w");
     fprintf(ps, "ph_sh, contribution, sigma_tot\n");
     for (int l=0; l<=lmax; l++)
