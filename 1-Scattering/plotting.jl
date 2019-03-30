@@ -27,3 +27,15 @@ Plots.plot!(X, u, label=string("u",3,0))
 
 file = string("./eigenstates3D_l",l,".pdf")
 savefig(P0,file)
+
+
+## SCATTERING
+cd("../Data_scattering")
+df_u = DataFrame(load("wavefunction_l3.csv"))
+N = size(df_u,1)
+X = LinRange(0,7,N)
+S = plot(X, [zeros(900,1);df_u.Veff[901:end]], label="Veff") # the munber is xmin
+plot!(X, df_u.y, label="u(x)")
+
+file = string("./scatterwave_l",3,".pdf")
+savefig(S,file)
