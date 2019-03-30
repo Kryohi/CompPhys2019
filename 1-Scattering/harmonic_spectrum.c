@@ -6,10 +6,16 @@
 #define h2m 0.5
 
 
-inline double V_ho(double x)
-{
-    return x*x/2;
-}
+    inline double V_ho(double x)
+    {
+        int HO1D =1;
+        if(HO1D==1){
+            return (x-10.)*(x-10.)/2;
+        }
+        else {
+            return (x)*(x)/2;
+        }
+    }
 
 
 int main(int argc, char** argv)
@@ -59,7 +65,7 @@ int main(int argc, char** argv)
     // Iterates the Numerov algorithm for different quantum numbers
     for (int l=0; l<=lmax; l++) {
         bc.data[1] = pow(rmax/xmax,l);
-        spectra[l] = numerov(nmax, l, xmax, rmax, h2m, 0.13, true, bc, V_ho);
+        spectra[l] = numerov(nmax, l, xmax, rmax, h2m, 0.13, true ,true, bc, V_ho);
     }
     
     
