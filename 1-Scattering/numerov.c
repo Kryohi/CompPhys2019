@@ -21,13 +21,17 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
     int xmin = bc0.length; // usually 2, but must be longer if there are big and high barriers (e.g. scattering)
     double xc_float; int xc; // point corresponding to the classical barrier
     int nfound = 0; // number of eigenvalues found
-    double E;
+
+    double E = E0(V,h,rmax) + Estep; // passare come argomento a Numerov?
+
     if (HO1D==true){
          E = E0(V,h,rmax)+V(10.+1e-1); // passare come argomento a Numerov?
     }
     if (HO1D==false){
          E = E0(V,h,rmax)+V(1e-1); // passare come argomento a Numerov?
     }
+    printf("\nStarting from energy %f\n", E);
+
     double E1, E2, E_;
     double delta, delta1, delta2, prevdelta=0;  // difference in the forward and backward log-derivatives
     double prev_yc = 0; // needed because when function flips sign the delta also changes sign producing false positives
@@ -39,11 +43,12 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
     // precalculation of the known terms
     for (int x=0; x<xmax; x++)
     {
-        V_[x] = V(x*h);
+        V_[x] = V(x*h+1e-14);
         centrifugal[x] = l*(l+1)/(x*h*x*h+1e-14);
     }
     
     // Boundary conditions near 0
+
     if (HO1D == false){
         if (bc0.length < 2) 
             perror("\nBoundary condition in 0 must contain at least 2 points.\n");
@@ -54,13 +59,16 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
     // Iterative process begins
     while (nfound < nmax)
     {
-        xc_float = findzero_last(V, E, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
-        //printf("xc_float %f, vs ho %f\n",xc_float,sqrt(2*E));
+        xc_float = findzero_last(V, E, xmin*h, rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+        //printf("xc_float %f, vs harmonic %f\n", xc_float, sqrt(fabs(2*E)));
         //xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
         xc = (int)round(xc_float/h);
         
         for (int x=0; x<xmax; x++)  // could probably start from xmin-2
             k2[x] = (E-V_[x])/h2m - centrifugal[x];
+        
+        /*for (int x=0; x<xmin; x++)
+            printf("K2, y = %f, %f; \t", k2[x], yf[x]);*/
         
         // Boundary conditions at rmax
         yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
@@ -76,15 +84,16 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
         numerov_forward(h*h, xc, xmin, k2, yf);
         numerov_backward(h*h, xc, xmax, k2, yb);
         delta = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
+        
         //printf("yf[xc-1] = %f,  yf[xc] = %f,  yf[xc+1]=%f\n", yf[xc-1], yf[xc], yf[xc+1]);
         //printf("yb[xc-1] = %f,  yb[xc] = %f,  yb[xc+1]=%f\n", yb[xc-1], yb[xc], yb[xc+1]);
-        //printf("derforward = %f,  derback = %f\n", der3(yf,xc,h), der3(yb,xc,h)/yb[xc]);
-        //printf("E = %f\tDelta rough = %f\n", E, delta);
+        //printf("derforward = %0.15f,  derback = %0.15f\n", yf[xc], der5(yb,xc,h)/yb[xc] );
+        printf("E = %f\tDelta rough = %f\n", E, delta);
         
         // If there is a change in sign, start the finer search of the 0 of delta(E) with the secant method
         if (delta*prevdelta < 0 && yf[xc]*prev_yc > 0)
         {
-            printf("\nFound a point of inversion at %f - %f\n", E-Estep, E);
+            printf("\n[Spectrum Numerov] Found a point of inversion at %f - %f\n", E-Estep, E);
             E1 = E - Estep; // store the previous value of E, before the change of sign
             E2 = E;
             delta1 = prevdelta;
@@ -98,12 +107,10 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
                 E1 = E_;
                 delta1 = delta2;
                 printf("E = %f\tdelta2 = %f\n", E2, delta2);
-                if (E2 > V_[xmax-1]) perror("\n!!! Energy has exploded over limits !!! \n");
-                if (E2 < 0) perror("\n!!! Energy is negative !!! \n");
+                if (E2 > V_[xmax-1]) perror("\n!!! [Spectrum Numerov] Energy has exploded over limits !!! \n");
                 
                 // Calculation of the next delta2 value
-                xc_float = findzero_last(V, E2, 0., rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
-                //xc_float = sqrt(2*E2); // !!!! vale solo per armonico !!!!
+                xc_float = findzero_last(V, E2, xmin*h, rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
                 xc = (int)round(xc_float/h);
                 
                 for (int x=0; x<xmax; x++)
@@ -128,6 +135,8 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
                 double norm = sqrt(normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1)));
                 for (int x = xmax*nfound; x < xmax*(nfound+1); x++)
                     sp.eigfuns[x] = sp.eigfuns[x] / norm;
+                norm = normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1));
+                printf("\nnorm = %f\nn", norm);
             }
                 
             nfound++;
@@ -137,8 +146,10 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
         prev_yc = yf[xc];
         E += Estep;
         
-        if (E>V_[xmax-1])
-            perror("Could not find enough solutions with the parameters provided\n");
+        if (E>V_[xmax-1])   {
+            perror("[Spectrum Numerov] Could not find enough solutions with the parameters provided\n");
+            return sp;
+        }
     }
     
     return sp;
@@ -150,14 +161,16 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
 */ 
 void numerov_forward(double hh, int xc, int xmin, const double * k2, double * y) 
 {
-    double c0 = hh*k2[2]/12;
-    double c_1 = hh*k2[1]/12;
-    double c_2 = hh*k2[0]/12;
+    double c0 = hh*k2[xmin]/12;
+    double c_1 = hh*k2[xmin-1]/12;
+    double c_2 = hh*k2[xmin-2]/12;
     for (int x=xmin; x<xc+3; x++)  {
         y[x] = (y[x-1]*(2-10*c_1) - y[x-2]*(1+c_2)) / (1+c0);
         c_2 = c_1;
         c_1 = c0;
         c0 = hh*k2[x+1]/12;
+        //printf("y%d = %.9f\t", x, y[x]);
+        if (fabs(y[x]) > 1e18) perror("\n\n!!!!![void numerov_forward]  Y is getting very B I G G , deploy the garrison, NOW  !!!!!!\n\n");
     }
 }
 
@@ -178,23 +191,25 @@ void numerov_backward(double hh, int xc, int xmax, const double * k2, double * y
 double E0_stupid(double (*V)(double), double h, double rmax)
 {
     // we'll just assume that the minimum is near 0 ¯\_(ツ)_/¯
-    return V(1e-1);
+    return V(5e-2);
 }
 
 // Very basic gradient descent toward the potential minimum (currently the nearest minimum to the middle of the grid)
+// TODO make it start from different uniformly random distri points, discard points with a vary low derivative
+// and those that exit from the boundaries
 double E0(double (*V)(double), double h, double rmax)
 {
-    double r = 3*rmax/4; // starting point
+    double r = rmax/3; // starting point
     double scale = fabs(V(rmax)-V(r)); // to get an order of magnitude of the variation of V
     double gamma = scale/500;
     double grad = 10.;
     
-    while (fabs(grad) > 1e-5)
+    while (fabs(grad) > 1e-7)
     {
         grad = der5_c(V,r,h);
         r -= gamma*grad;
-        //printf("grad = %f\tr=%f\n", grad, r);
     }
+    //printf("grad = %f\tr=%f\n", grad, r);
     
     return V(r);
 }
@@ -228,7 +243,7 @@ void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)
     FILE * eigenvalues;
     eigenvalues = fopen(filename, "w");
     if (eigenvalues == NULL)
-        perror("error while writing on eigenvalues.csv");
+        perror("[void save2csv] Error while writing on eigenvalues.csv\n");
     
     fprintf(eigenvalues, "l, n, E\n");
     for (int l=0; l<=lmax; l++)
@@ -239,7 +254,7 @@ void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)
     FILE * eigenvectors;
     eigenvectors = fopen("./eigenvectors.csv", "w");
     if (eigenvectors == NULL)
-        perror("error while writing on eigenvectors.csv");
+        perror("[void save2csv] Error while writing on eigenvectors.csv\n");
     
     fprintf(eigenvectors, "y%d%d", 0, 0);
     for (int l=0; l<=lmax; l++) {

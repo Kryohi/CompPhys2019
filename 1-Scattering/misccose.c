@@ -1,5 +1,7 @@
 
-
+int * currentTime();
+void make_directory(const char* name);
+void print_path();
 
 int * currentTime()
 {
