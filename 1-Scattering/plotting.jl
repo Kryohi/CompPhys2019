@@ -43,8 +43,8 @@ savefig(S,file)
 
 # total cross-section
 df_tcs = DataFrame(load("total_csection.csv"))
-tcs = plot(df_tcs.E, df_tcs.sigma_tot, label=L"\sigma_{tot}")
-savefig(tcs,"./crosssectionfine.pdf")
+tcs = plot(df_tcs.E[1:end], df_tcs.sigma_tot[1:end], label=L"\sigma_{tot}")
+savefig(tcs,"./crosssection.pdf")
 
 # phase-shifts
 df_pss = DataFrame(load("phase_shifts.csv"))
@@ -64,4 +64,6 @@ plot!(df_pss.E, sin.(df_pss.l3).^2 .*7, label=L"\delta_{3}")
 plot!(df_pss.E, sin.(df_pss.l4).^2 .*9, label=L"\delta_{4}")
 plot!(df_pss.E, sin.(df_pss.l5).^2 .*11, label=L"\delta_{5}")
 plot!(df_pss.E, sin.(df_pss.l6).^2 .*13, label=L"\delta_{6}")
+#plot!(df_pss.E, sin.(df_pss.l7).^2 .*15, label=L"\delta_{7}")
+#plot!(df_pss.E, sin.(df_pss.l8).^2 .*17, label=L"\delta_{8}")
 savefig(pssc,"./phase_shifts_contributions.pdf")
