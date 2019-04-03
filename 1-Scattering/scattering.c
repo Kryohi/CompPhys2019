@@ -4,20 +4,16 @@
 double V_lj(double x, double epsilon, double sigma);
 double V_fastlj(double dr);
 
-#define N_E 300 // number of collision energies
-#define lmax 7 // 6
+#define N_E 500 // number of collision energies
+#define lmax 6 // 6
 #define rlow 0.63 // where V = 10 0.923, V=100 0.752, V=1000 0.63
 #define hbar 1.0545718e-34
 #define hbar_eV 4.13566766225e-15
 
-/* TODO 
- * salvare tutti i phase shift, a tutte le energie in colonna
- * 
- */
 
 int main(int argc, char** argv)
 {
-    double sigma = 3.18e-10; // m
+    double sigma = 3.18e-10; // m //pederiva value 3.18, paper 3.59
     double epsilon = 5.9e-3 * 1.602176565e-19; // J
     double E, Emax = 0.59322; // 3.5/5.9
     double Estep = Emax/N_E;
@@ -29,13 +25,11 @@ int main(int argc, char** argv)
     int xmax = 24000; // vedi sopra
     double h = rmax/xmax;
     int xmin = (int)round(rlow/h);   // point where V equals 1000 (chosen by looking at when the bound states become uncorrelated to this)
-    printf("\nxmin is %d\n", xmin);
     double y[xmax], k2[xmax], centrifugal[xmax], V_[xmax];
     
     double k, a, sigma_tot = 0;
     double delta[lmax+1];
     double J1[lmax+1]; double N1[lmax+1]; double J2[lmax+1]; double N2[lmax+1];
-    double tot_csection[N_E]; // prob non serve
     
     // creates data folder and files to save data
     make_directory("Data_scattering");
@@ -89,8 +83,8 @@ int main(int argc, char** argv)
     
     /*   Scattering   */
     
-    double r1 = 10.5;//*sigma;
-    double r2 = 11.75;//*sigma;
+    double r1 = 11.0;
+    double r2 = 11.75;
     double kr1, kr2;
     int x1 = (int)round(r1/h);
     int x2 = (int)round(r2/h);
@@ -99,7 +93,7 @@ int main(int argc, char** argv)
     //E = 0.3;
 
     // Ex. 7
-    for (E = 3*Estep; E<=Emax; E+=Estep)
+    for (E = Estep; E<=Emax; E+=Estep)
     {
         // precalculation of the known, constant terms
         k = sqrt(E/h2m);
@@ -117,7 +111,7 @@ int main(int argc, char** argv)
         // Bessel functions in r2
         J2[0] = sin(kr2)/kr2;
         J2[1] = (J2[0] - cos(kr2))/kr2;
-        N2[0] = -cos(r2)/r2;
+        N2[0] = -cos(kr2)/kr2;
         N2[1] = (N2[0] - sin(kr2))/kr2;
         fast_bessel(kr2, lmax, J2);
         fast_bessel(kr2, lmax, N2);
@@ -160,10 +154,10 @@ int main(int argc, char** argv)
                 fprintf(wf, "%f, %0.12f\n", V_[x] + h2m*l*(l+1)*centrifugal[x], y[x]);*/
         }
     
-        for (int l=0; l<=lmax; l++)
+        /*for (int l=0; l<=lmax; l++)
             printf("phase shift l=%d: %f\t sin^2 = %f\n", l, delta[l], sin(delta[l])*sin(delta[l]));
     
-        printf("scattering amplitude : %f\n\n", sigma_tot);
+        printf("scattering amplitude : %f\n\n", sigma_tot);*/
         
         // save data
         fprintf(tcs, "%f, %f\n", E, sigma_tot);
@@ -173,11 +167,11 @@ int main(int argc, char** argv)
         fprintf(pss, "%f\n", delta[lmax]);
         
     
-        /*snprintf(filename, 64, "./phaseshifts_r1%0.4f_r2%0.4f.csv", r1, r2);
+        /*snprintf(filename, 64, "./phaseshifts_r1%0.2f_r2%0.2f.csv", r1, r2);
         ps = fopen(filename, "w");
         fprintf(ps, "ph_sh, contribution, sigma_tot\n");
         for (int l=0; l<=lmax; l++)
-            fprintf(ps, "%0.9f, %0.9f, %f\n", delta[l], (2*l+1) * sin(delta[l])*sin(delta[l]), sigma_tot);*/
+            fprintf(ps, "%0.9f, %0.9f, %0.9f\n", delta[l], (2*l+1) * sin(delta[l])*sin(delta[l]), sigma_tot);*/
         
         sigma_tot = 0;
     }
