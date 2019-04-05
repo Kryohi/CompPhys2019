@@ -1,28 +1,10 @@
 
+#include "matematicose.h"
 
 /*
     Simple math
 */
 
-void simple_acf(const double *H, size_t length, int k_max, double * acf);
-void fft_acf(const double *H, size_t length, int k_max, double * acf);
-double sum(const double *A, size_t length);
-int intsum(const int * A, size_t length);
-double mean(const double * A, size_t length);
-double intmean(const int * A, size_t length);
-double variance(const double * A, size_t length);
-double variance_corr(const double * A, double tau, size_t length);
-void zeros(size_t length, double *A);
-void elforel(const double *A, const double * B, double * C, size_t length);
-bool isApproxEqual(double a, double b);
-double zerosecant(double (*f)(double), double x1, double x2, double inf, double sup);
-double secant(double (*f)(double), double c, double x1, double x2, double inf, double sup);
-double findzero_last(double (*f)(double), double c, double x1, double x2, double inf, double sup);
-void fast_bessel(double x, double lmax, double * J);
-double der3(double * F, int x, double h);
-double der5(double * F, int x, double h);
-double der5_c(double (*f)(double), double x, double h);
-double integrale_simpson(double *fun, int xmax, double h);
 
 inline double sum(const double * A, size_t length)   
 {
@@ -77,6 +59,32 @@ inline void zeros(size_t length, double *A)
     for (int i=length; i!=0; i--)
         A[i] = 0.0;
 }
+
+// apply a function to each element in the A array 
+// TODO check the slowdown vs a single for 
+void pointwise(double (*f)(double), double * A, size_t length) 
+{
+    for (int n=0; n<length; n++)
+        A[n] = f(A[n]);
+}
+
+int double_max_index(double * A, size_t length)
+{
+    int idx = 0;
+    for (int n=1; n<length; n++)
+        if (A[n]>A[idx]) idx = n;
+    
+    return idx;
+}
+int double_min_index(double * A, size_t length)
+{
+    int idx = 0;
+    for (int n=1; n<length; n++)
+        if (A[n]<A[idx]) idx = n;
+    
+    return idx;
+}
+
 
 inline double variance(const double * A, size_t length)
 {
@@ -203,7 +211,7 @@ double der5_c(double (*f)(double), double x, double h)
 
 // Numerical integration
 
-double integrale_simpson(double *fun, int xmax, double h){
+double simpson_integral(double *fun, int xmax, double h){
     //xmax should be even, given the algorithm used, and the value of the vector should be calculated equally spaced by h
     double integral = 0.;
 
@@ -213,5 +221,54 @@ double integrale_simpson(double *fun, int xmax, double h){
     
     return integral;
 }
+
+
+
+// Gradient descent
+
+double grad_descent_1D(double (*f)(double), double x1, double x2)
+{
+    double x = (x2-x1)/2; // starting point
+    double scale = fabs(f(x2)-f(x)); // to get an order of magnitude of the variation of V
+    double gamma = scale/200; // learning rate
+    double h = (x2-x1)/5e4;
+    double grad = 10.;
+    
+    while (fabs(grad) > 1e-7)
+    {
+        grad = der5_c(f,x,h);
+        x -= gamma*grad;
+    }
+    //printf("grad = %0.10f\tr=%f\n", grad, r);
+    
+    return x;
+}
+
+double stochastic_grad_descent_1D(double (*f)(double), double x1, double x2)
+{
+    srand(42);
+    int N = 64; // number of different starting points
+    double x[64]; // starting points
+    for (int n=0; n<N; n++) x[n] = (rand()/RAND_MAX)*(x2-x1) + x1;
+    double scale = fabs(f(x2)-f(x[31])); // to get an order of magnitude of the variation of V
+    double gamma = scale/200; // learning rate
+    double h = (x2-x1)/5e4;
+    double grad = 10.;
+    
+    for (int n=0; n<N; n++)
+    {
+        while (fabs(grad) > 1e-7)
+        {
+            grad = der5_c(f,x[n],h);
+            x[n] -= gamma*grad;
+        }
+    }
+    //printf("grad = %0.10f\tr=%f\n", grad, r);
+    
+    pointwise(f,x,N); // put f(x) instead of x in x
+    return x[double_min_index(x, N)];
+}
+
+
 
 

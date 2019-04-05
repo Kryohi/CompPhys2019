@@ -1,7 +1,7 @@
 #include "numerov.c"
 #include "misccose.c"
 
-double V_lj(double x, double epsilon, double sigma);
+double V_lj(double x);
 double V_fastlj(double dr);
 
 #define N_E 500 // number of collision energies
@@ -18,10 +18,10 @@ int main(int argc, char** argv)
     double E, Emax = 0.59322; // 3.5/5.9
     double Estep = Emax/N_E;
     double m = 1.66054e-27/(1/83.798 + 1/1.00794); // kg
-    double h2m = hbar*hbar/(2*m); // in un ibrido bastardizzato SI/eV
+    double h2m = hbar*hbar/(2*m); // in un ibrido SI/eV
     h2m = h2m/(epsilon*sigma*sigma); // ridotta
     //h2m = 0.035;
-    double rmax = 12.01; // Melius est abundare quam deficere
+    double rmax = 12.01; // esagerato, ma Melius est abundare quam deficere
     int xmax = 24000; // vedi sopra
     double h = rmax/xmax;
     int xmin = (int)round(rlow/h);   // point where V equals 1000 (chosen by looking at when the bound states become uncorrelated to this)
@@ -95,7 +95,7 @@ int main(int argc, char** argv)
     // Ex. 7
     for (E = Estep; E<=Emax; E+=Estep)
     {
-        // precalculation of the known, constant terms
+        // precalculation of the known terms independent from l
         k = sqrt(E/h2m);
         kr1 = k*r1;
         kr2 = k*r2;
@@ -115,17 +115,10 @@ int main(int argc, char** argv)
         N2[1] = (N2[0] - sin(kr2))/kr2;
         fast_bessel(kr2, lmax, J2);
         fast_bessel(kr2, lmax, N2);
-        
-        /*for (int l=0; l<=lmax; l++)  {
-            printf("J1[%d] = %f\n", l, J1[l]);
-            printf("N1[%d] = %f\n", l, N1[l]);
-            printf("J2[%d] = %f\n", l, J1[l]);
-            printf("N2[%d] = %f\n", l, N2[l]);
-        }printf("\n");*/
 
-        for (int x=0; x<xmax; x++)  {
-            V_[x] = V_fastlj(x*h+1e-15);
-            centrifugal[x] = 1/(x*h*x*h+1e-15);
+        for (int x=xmin-2; x<xmax; x++)  {
+            V_[x] = V_fastlj(x*h);
+            centrifugal[x] = 1/(x*h*x*h);
         }
     
         // Boundary conditions near zero, see point 5
@@ -138,7 +131,7 @@ int main(int argc, char** argv)
         for (int l=0; l<=lmax; l++)
         {
             // Numerov solution
-            for (int x=0; x<xmax; x++)
+            for (int x=xmin-2; x<xmax; x++)
                 k2[x] = (E-V_[x])/h2m - l*(l+1)*centrifugal[x];
     
             numerov_forward(h*h, xmax, xmin, k2, y);
@@ -182,9 +175,9 @@ int main(int argc, char** argv)
 
 
 
-inline double V_lj(double x, double epsilon, double sigma)
+inline double V_lj(double x)
 {
-    return 4*epsilon*(pow(sigma/x,12)-pow(sigma/x,6));
+    return 4*(pow(1/x,12)-pow(1/x,6));
 }
 
 inline double V_fastlj(double dr)

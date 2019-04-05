@@ -1,18 +1,13 @@
-// TODO
-/*
- * verificare modifica a boundary cond
- * migliorare find_zero in modo che pigli 0 appena dopo xc?
- * aggiungere stocasticità a mini gradient-descent in E0
- * verificare funzionamento nodeNumber
-*/
 
 #include "numerov.h"
-#include "matematicose.c"
+
+
+#define HO1D false
 
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns a Spectrum struct
-Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool HO1D, bool normalize, dArray bc0, double (*V)(double))
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool normalize, dArray bc0, double (*V)(double))
 {
     Spectrum sp;
     sp.EE = calloc(nmax, sizeof(double));
@@ -49,7 +44,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
     
     // Boundary conditions near 0
 
-    if (HO1D == false){
+    if(HO1D == false){
         if (bc0.length < 2) 
             perror("\nBoundary condition in 0 must contain at least 2 points.\n");
         for (int x=0; x<bc0.length; x++)
@@ -136,7 +131,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
                 for (int x = xmax*nfound; x < xmax*(nfound+1); x++)
                     sp.eigfuns[x] = sp.eigfuns[x] / norm;
                 norm = normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1));
-                printf("\nnorm = %f\nn", norm);
+                //printf("\nnorm = %f\n", norm);
             }
                 
             nfound++;
@@ -159,7 +154,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
  * Differential equation iterative solution
  * aggiunge 2 punti dopo la barriera classica in xc, per calcolare derivata in quel punto
 */ 
-void numerov_forward(double hh, int xc, int xmin, const double * k2, double * y) 
+void numerov_forward(double hh, int xc, int xmin, const double *restrict k2, double *restrict y) 
 {
     double c0 = hh*k2[xmin]/12;
     double c_1 = hh*k2[xmin-1]/12;
@@ -169,12 +164,11 @@ void numerov_forward(double hh, int xc, int xmin, const double * k2, double * y)
         c_2 = c_1;
         c_1 = c0;
         c0 = hh*k2[x+1]/12;
-        //printf("y%d = %.9f\t", x, y[x]);
-        if (fabs(y[x]) > 1e18) perror("\n\n!!!!![void numerov_forward]  Y is getting very B I G G , deploy the garrison, NOW  !!!!!!\n\n");
+        //if (fabs(y[x]) > 1e18) perror("\n\n!!![void numerov_forward]  Y is getting very B I G G , deploy the garrison, NOW  !!!\n\n");
     }
 }
 
-void numerov_backward(double hh, int xc, int xmax, const double * k2, double * y)
+void numerov_backward(double hh, int xc, int xmax, const double *restrict k2, double *restrict y)
 {
     double c0 = hh*k2[xmax-3]/12;
     double c1 = hh*k2[xmax-2]/12;
@@ -188,20 +182,13 @@ void numerov_backward(double hh, int xc, int xmax, const double * k2, double * y
 }
 
 
-double E0_stupid(double (*V)(double), double h, double rmax)
-{
-    // we'll just assume that the minimum is near 0 ¯\_(ツ)_/¯
-    return V(5e-2);
-}
-
 // Very basic gradient descent toward the potential minimum (currently the nearest minimum to the middle of the grid)
-// TODO make it start from different uniformly random distri points, discard points with a vary low derivative
-// and those that exit from the boundaries
+// (could now use the stochastic one in matematicose)
 double E0(double (*V)(double), double h, double rmax)
 {
     double r = rmax/3; // starting point
     double scale = fabs(V(rmax)-V(r)); // to get an order of magnitude of the variation of V
-    double gamma = scale/500;
+    double gamma = scale/300;
     double grad = 10.;
     
     while (fabs(grad) > 1e-7)
@@ -232,7 +219,7 @@ double normalizationFactor(const double * eigv, double h, int x1, int x2)
     for(int i=x1; i<x2; i++)
         sqmod[i-x1] = eigv[i]*eigv[i];
     
-    return integrale_simpson(sqmod, x2-x1, h);
+    return simpson_integral(sqmod, x2-x1, h);
 }
 
 void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)

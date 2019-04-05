@@ -1,0 +1,12 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <math.h>
+#include <time.h>
+#include <string.h>
+#include <limits.h>
+#include <complex.h>
+//#include <fftw3.h>
+#include "../matematicose.c"
+#include "../misccose.c"
