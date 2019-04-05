@@ -6,13 +6,11 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
-#include <inttypes.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <limits.h>
 #include <complex.h>
-#include <fftw3.h>
+//#include <fftw3.h>
+#include "../matematicose.c"
+#include "../misccose.c"
 
 
 typedef struct Spectrum { 
@@ -28,8 +26,7 @@ typedef struct dArray {
 } dArray;
 
 
-
-Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool HO1D, bool normalize, dArray bc0, double (*f)(double));
+Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool normalize, dArray bc0, double (*f)(double));
 void numerov_forward(double h, int xc, int xmin, const double * k2, double * y);
 void numerov_backward(double h, int xc, int xmax, const double * k2, double * y);
 double V_ho(double x);

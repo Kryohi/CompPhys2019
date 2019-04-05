@@ -1,7 +1,4 @@
-
-int * currentTime();
-void make_directory(const char* name);
-void print_path();
+#include "misccose.h"
 
 int * currentTime()
 {
