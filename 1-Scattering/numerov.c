@@ -154,7 +154,7 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
  * Differential equation iterative solution
  * aggiunge 2 punti dopo la barriera classica in xc, per calcolare derivata in quel punto
 */ 
-void numerov_forward(double hh, int xc, int xmin, const double *restrict k2, double *restrict y) 
+void numerov_forward(double hh, int xc, int xmin, const double * k2, double * y) 
 {
     double c0 = hh*k2[xmin]/12;
     double c_1 = hh*k2[xmin-1]/12;
@@ -168,7 +168,7 @@ void numerov_forward(double hh, int xc, int xmin, const double *restrict k2, dou
     }
 }
 
-void numerov_backward(double hh, int xc, int xmax, const double *restrict k2, double *restrict y)
+void numerov_backward(double hh, int xc, int xmax, const double * k2, double * y)
 {
     double c0 = hh*k2[xmax-3]/12;
     double c1 = hh*k2[xmax-2]/12;
