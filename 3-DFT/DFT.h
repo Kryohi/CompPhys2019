@@ -26,7 +26,3 @@ typedef struct dArray {
     size_t length;
     double * data;
 } dArray;
-
-
-
-double * eigenvalues_nxn(double *a, double *b, uint16_t n);
