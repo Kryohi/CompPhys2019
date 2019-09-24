@@ -9,6 +9,9 @@
 #define a3 2.22726
 
 
+void multiplytest(void);
+
+
 int main(int argc, char** argv)
 { 
     
@@ -55,28 +58,43 @@ double * gen_eigenvalues_nxn(double *a, double *b, uint16_t n)
     return eigenvalues;
 }
 
-void multiplytest(void) {
+void multiplytest(){
     double a[] = { 0.11, 0.12, 0.13,
-                 0.21, 0.22, 0.23 };
+                 0.21, 0.22, 0.23,
+                 0.31, 0.32, 0.33};
 
-    double b[] = { 1011, 1012,
-                 1021, 1022,
-                 1031, 1032 };
+    double b[] = { 1011, 1012, 1013,
+                 1021, 1022, 1023,
+                 1031, 1032, 1033 };
 
-    double c[] = { 0.00, 0.00,
-                 0.00, 0.00 };
+    double c[] = { 1.00, 0.00, 0.00,
+                 0.00, 2.00, 0.00,
+                 0.00, 0.00, 3.00};
+                 
+    double d[] = { 0.00, 0.00, 0.00,
+                 0.00, 0.00, 0.00,
+                 0.00, 0.00, 0.00};
 
-    gsl_matrix_view A = gsl_matrix_view_array(a, 2, 3);
-    gsl_matrix_view B = gsl_matrix_view_array(b, 3, 2);
-    gsl_matrix_view C = gsl_matrix_view_array(c, 2, 2);
-
-    /* Compute C = A B */
+    double e[] = { 0.00, 0.00, 0.00,
+                 0.00, 0.00, 0.00,
+                 0.00, 0.00, 0.00};
+                 
+    gsl_matrix_view A = gsl_matrix_view_array(a, 3, 3);
+    gsl_matrix_view B = gsl_matrix_view_array(b, 3, 3);
+    gsl_matrix_view C = gsl_matrix_view_array(c, 3, 3);
+    gsl_matrix_view D = gsl_matrix_view_array(d, 3, 3);
+    gsl_matrix_view E = gsl_matrix_view_array(e, 3, 3);
+    // we want to compute ACB, where C is the diagonal matrix. To do this we fist compute D=CB
 
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
-                  1.0, &A.matrix, &B.matrix,
-                  0.0, &C.matrix);
-
-    printf ("[ %g, %g\n", c[0], c[1]);
-    printf ("  %g, %g ]\n", c[2], c[3]);
-
+                  1.0, &C.matrix, &B.matrix,
+                  0.0, &D.matrix);
+    
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
+                  1.0, &A.matrix, &D.matrix,
+                  0.0, &E.matrix);
+    
+    printf ("[ %g, %g, %g \n", e[0], e[1], e[2]);
+    printf ("  %g, %g, %g \n", e[3], e[4], e[5]);
+    printf ("  %g, %g, %g]\n", e[6], e[7], e[8]);
 }
