@@ -1,6 +1,6 @@
 #include "hydrogen.h"
 
-#define eigen_method_diy 0
+
 #define h2m 0.5
 
 /* STO-3G parameters */
@@ -12,53 +12,175 @@
 void multiplytest(void);
 
 
+
+void  gen_eigenvalues_nxn_gsl(double *a, double *b,uint16_t n)
+{
+    
+    
+    gsl_matrix_view A = gsl_matrix_view_array(a, n, n);
+    gsl_matrix_view B = gsl_matrix_view_array(b, n, n);
+
+    gsl_vector *eval1 = gsl_vector_alloc (n);
+    gsl_matrix *evec1 = gsl_matrix_alloc(n, n);
+    
+    gsl_eigen_gensymmv_workspace * w = gsl_eigen_gensymmv_alloc(n);
+    gsl_eigen_gensymmv(&A.matrix, &B.matrix, eval1, evec1, w);
+    gsl_eigen_gensymmv_free(w);
+
+    {
+    int i;
+
+    for (i = 0; i < n; i++)
+      {
+        double eval_i
+           = gsl_vector_get (eval1, i);
+        gsl_vector_view evec_i
+           = gsl_matrix_column (evec1, i);
+
+        printf ("eigenvalue = %g\n", eval_i);
+        printf ("eigenvector = \n");
+        gsl_vector_fprintf (stdout,
+                            &evec_i.vector, "%g");
+      }
+  }
+
+}
+
+
+
+void gen_eigenvalues_nxn_man(double *a, double *b, uint16_t n){
+
+    int i,j;
+
+    gsl_matrix_view A = gsl_matrix_view_array(a, n, n);
+    gsl_matrix_view B = gsl_matrix_view_array(b, n, n);
+    
+    gsl_vector *evalb = gsl_vector_alloc (n);
+    gsl_matrix *evecb = gsl_matrix_alloc(n, n);
+    
+    gsl_eigen_symmv_workspace * w = gsl_eigen_symmv_alloc(n);
+    gsl_eigen_symmv(&B.matrix, evalb, evecb, w);
+    gsl_eigen_symmv_free(w);
+    
+    double lambda1=sqrt(1./(gsl_vector_get (evalb, 0)));
+    double lambda2=sqrt(1./(gsl_vector_get (evalb, 1)));
+    double lambda3=sqrt(1./(gsl_vector_get (evalb, 2)));
+    
+    double lambdab[]={lambda1,0.,0.,  //matrix of eigenvalue of B inverted and square rooted
+                     0.,lambda2,0.,
+                     0.,0.,lambda3};
+    
+     double Phibp[] = { 0.00, 0.00, 0.00,
+                 0.00, 0.00, 0.00,
+                 0.00, 0.00, 0.00};
+                                 
+    gsl_matrix_view lambdabm = gsl_matrix_view_array(lambdab, n, n);
+    gsl_matrix_view Phibm = gsl_matrix_view_array(Phibp, n, n);  
+    //gsl_matrix_view Evecb = gsl_matrix_view_array(evecb, n, n);   
+                     
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
+                  1.0, evecb, &lambdabm.matrix,
+                  0.0, &Phibm.matrix);                 
+    
+
+    
+    double Ap[] = { 0.00, 0.00, 0.00,
+                    0.00, 0.00, 0.00,
+                    0.00, 0.00, 0.00};
+    
+    double Phibt[] = { 0.00, 0.00, 0.00,
+                 0.00, 0.00, 0.00,
+                 0.00, 0.00, 0.00};
+
+    gsl_matrix_view Phibtm = gsl_matrix_view_array(Phibt, n, n);
+
+    gsl_matrix_transpose_memcpy(&Phibtm.matrix, &Phibm.matrix);
+    
+    multiply3matrix(Phibt, a, Phibp, Ap,3);
+    
+    gsl_matrix_view Apm= gsl_matrix_view_array(Ap, n, n);
+    
+    gsl_vector *evalAp = gsl_vector_alloc (n);
+    gsl_matrix *evecAp = gsl_matrix_alloc(n, n);
+    
+    gsl_eigen_symmv_workspace * ww = gsl_eigen_symmv_alloc(n);
+    gsl_eigen_symmv(&Apm.matrix, evalAp, evecAp, ww);
+    gsl_eigen_symmv_free(ww);
+    
+    double Phi[]={ 0.00, 0.00, 0.00,
+                   0.00, 0.00, 0.00,
+                   0.00, 0.00, 0.00};
+                   
+    double evecbv[]={ 0.00, 0.00, 0.00, //stupida cosa per ottenere degli array da dare in pasto alla fn moltiplica matrici
+                   0.00, 0.00, 0.00,
+                   0.00, 0.00, 0.00};
+     int f=0;              
+     for (i = 0; i < n; i++)
+      {
+        for (j=0; j<n;j++){
+        
+            evecbv[j+f]=gsl_matrix_get(evecb, i, j);
+            f+=3;
+        }
+      }              
+     double evecApv[]={ 0.00, 0.00, 0.00,
+                   0.00, 0.00, 0.00,
+                   0.00, 0.00, 0.00};
+     int ff=0;              
+     for (i = 0; i < n; i++)
+      {
+        for (j=0; j<n;j++){
+            evecApv[j+ff]=gsl_matrix_get(evecAp, i, j);
+            printf("eigenstate of A=%g\n", evecApv[j+ff]);
+            ff+=3;
+        }
+      }  
+                   
+    multiply3matrix(evecbv,lambdab,evecApv, Phi, n);
+    
+    gsl_matrix_view Phim = gsl_matrix_view_array(Phi, n, n);
+    for (i = 0; i < n; i++)
+      {
+        double eval_i
+           = gsl_vector_get (evalAp, i);
+        gsl_vector_view evec_i
+           = gsl_matrix_column (&Phim.matrix, i);
+
+        printf ("eigenvalue = %g\n", eval_i);
+        printf ("eigenvector = \n");
+        gsl_vector_fprintf (stdout,
+                            &evec_i.vector, "%g");
+      }
+}
+
+
 int main(int argc, char** argv)
 { 
     
-    multiplytest();
-    double a[] = {1,0,0,1};
-    double b[] = {2,0,0,2};
-    double *eval = malloc(2 * sizeof(double));
-    eval = gen_eigenvalues_nxn(a, b, 2);
-    printf ("[ %g, %g\n", eval[0], eval[1]);
-    printf ("  %g, %g ]\n", eval[2], eval[3]);
+    
+    double a[] = {1.,5.,6.,
+                  5.,1.,5.,
+                  6.,5.,1.};
+    double b[] = {2.,0.,1.,
+                  0.,2.,0.,
+                  1.,0.,2.};
+    
+    gen_eigenvalues_nxn_gsl(a, b,3); //generalized eigenvalue problem with gsl
+   
+    double aa[] = {1.,5.,6.,
+                  5.,1.,5.,
+                  6.,5.,1.};
+    double bb[] = {2.,0.,1.,
+                  0.,2.,0.,
+                  1.,0.,2.};
+    gen_eigenvalues_nxn_man(aa, bb, 3);
+    //multiply3matrix(w, c, v, r, 3); function for three matrix product
+                 
     
     return 0;
 }
 
-double * gen_eigenvalues_nxn(double *a, double *b, uint16_t n)
-{
-    double *eigenvalues = malloc(n * sizeof(double));
-    double *eigenvectors = malloc(n*n * sizeof(double));
-    zeros(n, eigenvalues); zeros(n*n, eigenvectors);
-    
-    gsl_matrix_view A = gsl_matrix_view_array(a, n, n);
-    gsl_matrix_view B = gsl_matrix_view_array(b, n, n);
-    gsl_vector_view eval = gsl_vector_view_array(eigenvalues, n);
-    gsl_matrix_view evec = gsl_matrix_view_array(eigenvectors, n, n);
-    
-    
-    #if eigen_method_diy
-    /* Metodo 1:
-     * algoritmo di Boh
-    */
-    
-    
-    #else
-    /* Metodo 2:
-     * gsl_eigen_gensymmv()
-    */
-    gsl_eigen_gensymmv_workspace * w = gsl_eigen_gensymmv_alloc(n);
-    gsl_eigen_gensymmv(&A.matrix, &B.matrix, &eval.vector, &evec.matrix, w);
-    gsl_eigen_gensymmv_free(w);
-
-    #endif
-    
-    
-    return eigenvalues;
-}
-
-void multiplytest(){
+/*void multiplytest( ){
     double a[] = { 0.11, 0.12, 0.13,
                  0.21, 0.22, 0.23,
                  0.31, 0.32, 0.33};
@@ -89,7 +211,7 @@ void multiplytest(){
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
                   1.0, &C.matrix, &B.matrix,
                   0.0, &D.matrix);
-    
+    // now we do E=AD 
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
                   1.0, &A.matrix, &D.matrix,
                   0.0, &E.matrix);
@@ -97,4 +219,4 @@ void multiplytest(){
     printf ("[ %g, %g, %g \n", e[0], e[1], e[2]);
     printf ("  %g, %g, %g \n", e[3], e[4], e[5]);
     printf ("  %g, %g, %g]\n", e[6], e[7], e[8]);
-}
+}*/
