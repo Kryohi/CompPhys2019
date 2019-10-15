@@ -6,7 +6,11 @@
 /* STO-3G parameters */
 #define a1 0.109818
 #define a2 0.405771
-#define a3 2.22726
+#define a3 0.222776 //NB PROBLEMA QUI: PEDERIVA SCRIVE 2.22776 ma altri ci mettono lo 0 davanti
+
+// STO-2G parameters
+#define a12g 0.151623
+#define a22g 0.384244 //funziona meglio con gli altri ma non mi è chiaro perchè
 
 
 void multiplytest(void);
@@ -38,14 +42,12 @@ void  gen_eigenvalues_nxn_gsl(double *a, double *b,uint16_t n)
            = gsl_matrix_column (evec1, i);
 
         printf ("eigenvalue = %g\n", eval_i);
-        printf ("eigenvector = \n");
-        gsl_vector_fprintf (stdout,
-                            &evec_i.vector, "%g");
+        //printf ("eigenvector = \n");
+        //gsl_vector_fprintf (stdout,&evec_i.vector, "%g");
       }
   }
 
 }
-
 
 
 void gen_eigenvalues_nxn_man(double *a, double *b, uint16_t n){
@@ -96,7 +98,7 @@ void gen_eigenvalues_nxn_man(double *a, double *b, uint16_t n){
 
     gsl_matrix_transpose_memcpy(&Phibtm.matrix, &Phibm.matrix);
     
-    multiply3matrix(Phibt, a, Phibp, Ap,3);
+    multiply3matrix(Phibt, a, Phibp, Ap,n);
     
     gsl_matrix_view Apm= gsl_matrix_view_array(Ap, n, n);
     
@@ -131,7 +133,7 @@ void gen_eigenvalues_nxn_man(double *a, double *b, uint16_t n){
       {
         for (j=0; j<n;j++){
             evecApv[j+ff]=gsl_matrix_get(evecAp, i, j);
-            printf("eigenstate of A=%g\n", evecApv[j+ff]);
+            //printf("eigenstate of A=%g\n", evecApv[j+ff]);
             ff+=3;
         }
       }  
@@ -146,8 +148,8 @@ void gen_eigenvalues_nxn_man(double *a, double *b, uint16_t n){
         gsl_vector_view evec_i
            = gsl_matrix_column (&Phim.matrix, i);
 
-        printf ("eigenvalue = %g\n", eval_i);
-        printf ("eigenvector = \n");
+        //printf ("eigenvalue = %g\n", eval_i);
+        //printf ("eigenvector = \n");
         gsl_vector_fprintf (stdout,
                             &evec_i.vector, "%g");
       }
@@ -158,16 +160,67 @@ int main(int argc, char** argv)
 { 
     
     
-    double a[] = {1.,5.,6.,
+    /*double a[] = {1.,5.,6.,
                   5.,1.,5.,
                   6.,5.,1.};
     double b[] = {2.,0.,1.,
                   0.,2.,0.,
-                  1.,0.,2.};
+                  1.,0.,2.};*/
     
-    gen_eigenvalues_nxn_gsl(a, b,3); //generalized eigenvalue problem with gsl
+    // Caso con singola gaussiana
+    double Et=-0.5;
+    double a1s=a1;
+    while(abs(Et-E)>0.1){
+        double H1[]={3.*pow(M_PI,1.5)/(2.*sqrt(2.*a1s))-3.*pow(M_PI,1.5)/(sqrt(2.*a1s))-M_PI/a1s};
+        double S1[]={pow(M_PI, 1.5)/(pow(2.*a1s,1.5))};
+            
+        gen_eigenvalues_nxn_gsl(H1, S1,1); //generalized eigenvalue problem with gsl
+    }
+    // doppia gaussiana //NB PER RENDERE SIMMETRICA LA MATRICE USO IL FATTO CHE E' AUTOAGGIUNTA E AGISCE A SX QUANDO SERVE
+    
+    double a1d=a1; 
+    double a2d=a2;
+    double H2[]={3.*pow(M_PI,1.5)/(2.*sqrt(2.*a1d))-3.*pow(M_PI,1.5)/(sqrt(2.*a1d))-M_PI/a1d, 
+        6.*pow(M_PI,1.5)*a2d*a2d/(pow(a1d+a2d,2.5))-6.*pow(M_PI,1.5)*a2d/(pow(a1d+a2d,1.5))-2.*M_PI/(a1d+a2d),
+        6.*pow(M_PI,1.5)*a2d*a2d/(pow(a1d+a2d,2.5))-6.*pow(M_PI,1.5)*a2d/(pow(a1d+a2d,1.5))-2.*M_PI/(a1d+a2d),
+        3.*pow(M_PI,1.5)/(2.*sqrt(2.*a2d))-3.*pow(M_PI,1.5)/(sqrt(2.*a2d))-M_PI/a2d
+    };
+    double S2[]={pow(M_PI, 1.5)/(pow(2.*a1d,1.5)),
+                 pow(M_PI, 1.5)/(pow(a1d+a2d,1.5)),
+                 pow(M_PI, 1.5)/(pow(a1d+a2d,1.5)),
+                 pow(M_PI, 1.5)/(pow(2.*a2d,1.5))};
+    
+    gen_eigenvalues_nxn_gsl(H2, S2,2); 
+    
+    //Tripla gaussiana
+    
+    double a1t=a1; 
+    double a2t=a2;
+    double a3t=a3;
+    double H3[]={3.*pow(M_PI,1.5)/(2.*sqrt(2.*a1t))-3.*pow(M_PI,1.5)/(sqrt(2.*a1t))-M_PI/a1t, 
+        6.*pow(M_PI,1.5)*a2t*a2t/(pow(a1t+a2t,2.5))-6.*pow(M_PI,1.5)*a2t/(pow(a1t+a2t,1.5))-2.*M_PI/(a1t+a2t),
+        6.*pow(M_PI,1.5)*a1t*a1t/(pow(a1t+a3t,2.5))-6.*pow(M_PI,1.5)*a1t/(pow(a1t+a3t,1.5))-2.*M_PI/(a1t+a3t),
+        6.*pow(M_PI,1.5)*a2t*a2t/(pow(a1t+a2t,2.5))-6.*pow(M_PI,1.5)*a2t/(pow(a1t+a2t,1.5))-2.*M_PI/(a1t+a2t),
+        3.*pow(M_PI,1.5)/(2.*sqrt(2.*a2t))-3.*pow(M_PI,1.5)/(sqrt(2.*a2t))-M_PI/a2t,
+        6.*pow(M_PI,1.5)*a3t*a3t/(pow(a2t+a3t,2.5))-6.*pow(M_PI,1.5)*a3t/(pow(a2t+a3t,1.5))-2.*M_PI/(a2t+a3t),
+        6.*pow(M_PI,1.5)*a1t*a1t/(pow(a1t+a3t,2.5))-6.*pow(M_PI,1.5)*a1t/(pow(a1t+a3t,1.5))-2.*M_PI/(a1t+a3t),
+        6.*pow(M_PI,1.5)*a2t*a2t/(pow(a2t+a3t,2.5))-6.*pow(M_PI,1.5)*a2t/(pow(a2t+a3t,1.5))-2.*M_PI/(a2t+a3t),
+        3.*pow(M_PI,1.5)/(2.*sqrt(2.*a3t))-3.*pow(M_PI,1.5)/(sqrt(2.*a3t))-M_PI/a3t
+    };
+    double S3[]={pow(M_PI, 1.5)/(pow(2.*a1t,1.5)),
+                 pow(M_PI, 1.5)/(pow(a1t+a2t,1.5)),
+                 pow(M_PI, 1.5)/(pow(a1t+a3t,1.5)),
+                 pow(M_PI, 1.5)/(pow(a1t+a2t,1.5)),
+                 pow(M_PI, 1.5)/(pow(2.*a2t,1.5)),
+                 pow(M_PI, 1.5)/(pow(a2t+a3t,1.5)),
+                 pow(M_PI, 1.5)/(pow(a1t+a3t,1.5)),
+                 pow(M_PI, 1.5)/(pow(a2t+a3t,1.5)),
+                 pow(M_PI, 1.5)/(pow(2.*a3t,1.5)),
+    };
+    
    
-    double aa[] = {1.,5.,6.,
+    gen_eigenvalues_nxn_gsl(H3, S3,3); 
+    /*double aa[] = {1.,5.,6.,
                   5.,1.,5.,
                   6.,5.,1.};
     double bb[] = {2.,0.,1.,
@@ -175,7 +228,7 @@ int main(int argc, char** argv)
                   1.,0.,2.};
     gen_eigenvalues_nxn_man(aa, bb, 3);
     //multiply3matrix(w, c, v, r, 3); function for three matrix product
-                 
+    */
     
     return 0;
 }

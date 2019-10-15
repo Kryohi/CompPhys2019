@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_eigen.h>
+#include "hydrogen.h"
 
 int
 main (void)
@@ -11,20 +12,20 @@ main (void)
                     1.0, 1/5.0, 1/6.0, 1/7.0 };
 
   gsl_matrix_view m
-    = gsl_matrix_view_array (data, 4, 4);
+    = gsl_matrix_view_array (data, 3, 3);
     
-    for (int i = 0; i < 4; i++){  /* OUT OF RANGE ERROR */
-        for (int j = 0; j < 4; j++){
+    for (int i = 0; i < 3; i++){  /* OUT OF RANGE ERROR */
+        for (int j = 0; j < 3; j++){
         printf ("m(%d,%d) = %g\n", i, j,
                 gsl_matrix_get (&m.matrix, i, j));
 
         }
     }        
-  gsl_vector *eval = gsl_vector_alloc (4);
-  gsl_matrix *evec = gsl_matrix_alloc (4, 4);
+  gsl_vector *eval = gsl_vector_alloc (3);
+  gsl_matrix *evec = gsl_matrix_alloc (3, 3);
 
   gsl_eigen_symmv_workspace * w =
-    gsl_eigen_symmv_alloc (4);
+    gsl_eigen_symmv_alloc (3);
 
   gsl_eigen_symmv (&m.matrix, eval, evec, w);
 
