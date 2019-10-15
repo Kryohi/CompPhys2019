@@ -28,3 +28,4 @@ void simple_acf(const double *H, size_t length, int k_max, double * acf);
 void fft_acf(const double *H, size_t length, int k_max, double * acf);
 double grad_descent_1D(double (*f)(double), double x1, double x2);
 double stochastic_grad_descent_1D(double (*f)(double), double x1, double x2);
+void multiply3matrix (double *a, double *c, double *b, double *e, uint16_t n); //the fourth input is the result of the multiplication, 
