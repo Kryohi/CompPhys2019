@@ -60,6 +60,43 @@ inline void zeros(size_t length, double *A)
         A[i] = 0.0;
 }
 
+inline double min_d(const double * A, size_t length)
+{
+    double min = A[0];
+    for (int i=1; i<length; i++)
+        if (A[i] < min) min = A[i];
+    
+    return min;
+}
+
+inline double max_d(const double * A, size_t length)
+{
+    double max = A[0];
+    for (int i=1; i<length; i++)
+        if (A[i] > max) max = A[i];
+    
+    return max;
+}
+
+inline double min_absd(const double * A, size_t length)
+{
+    double min = fabs(A[0]);
+    for (int i=1; i<length; i++)
+        if (fabs(A[i]) < min) min = fabs(A[i]);
+    
+    return min;
+}
+
+inline double max_absd(const double * A, size_t length)
+{
+    double max = fabs(A[0]);
+    for (int i=1; i<length; i++)
+        if (fabs(A[i]) > max) max = fabs(A[i]);
+    
+    return max;
+}
+
+
 // apply a function to each element in the A array 
 // TODO check the slowdown vs a single for 
 void pointwise(double (*f)(double), double * A, size_t length) 
@@ -67,7 +104,15 @@ void pointwise(double (*f)(double), double * A, size_t length)
     for (int n=0; n<length; n++)
         A[n] = f(A[n]);
 }
+// apply a function with 2 parameters and store the results in an array B half the lenght of A
+/*void pointwise2D(double (*f)(double *), double * A, double * B, size_t length) 
+{
+    for (int n=0; n<length; n++)
+        B[n] = f(A[2*n], A[2*n+1]);
+}*/
 
+
+// return the index of the element with maximum value in a double array
 int double_max_index(double * A, size_t length)
 {
     int idx = 0;
@@ -185,6 +230,7 @@ inline void vecBoxMuller(double sigma, size_t length, double * A)
 }
 
 
+
 /*
  * 
  * Calculus
@@ -208,6 +254,25 @@ double der5_c(double (*f)(double), double x, double h)
     return (-f(x+2*h) + 8*f(x+h) - 8*f(x-h) + f(x-2*h))/(12*h);
 }
 
+double der5_part(double (*f)(double*), double * x, size_t d, int l, double h)
+{
+    double xh[d], x2h[d], x_h[d], x_2h[d];
+    
+    for (int i=0; i<d; i++)
+    {
+        xh[i] = x[i];
+        x2h[i] = x[i];
+        x_h[i] = x[i];
+        x_2h[i] = x[i];
+    }
+    xh[l] = x[l]+h;
+    x2h[l] = x[l]+2*h;
+    x_h[l] = x[l]-h;
+    x_2h[l] = x[l]-2*h;
+    
+    return (-f(x2h) + 8*f(xh) - 8*f(x_h) + f(x_2h))/(12*h);
+}
+
 
 // Numerical integration
 
@@ -224,7 +289,8 @@ double simpson_integral(double *fun, int xmax, double h){
 
 
 
-// Gradient descent
+
+// Gradient descent (toward madness)
 
 double grad_descent_1D(double (*f)(double), double x1, double x2)
 {
@@ -244,30 +310,83 @@ double grad_descent_1D(double (*f)(double), double x1, double x2)
     return x;
 }
 
-double stochastic_grad_descent_1D(double (*f)(double), double x1, double x2)
+
+
+// First iterates through some randomly placed points X0, in the region bounded by x1 and x2,
+// in order to avoid regions too far from the minimum that might have vanishing gradient.
+// Then starts the gradient descent from the point with the lowest value found.
+// The resulting minimum (array) is put into x
+
+void grad_descent(double (*f)(double*), double x1, double x2, uint16_t d, double * x, bool ascent)
 {
     srand(42);
-    int N = 64; // number of different starting points
-    double x[64]; // starting points
-    for (int n=0; n<N; n++) x[n] = (rand()/RAND_MAX)*(x2-x1) + x1;
-    double scale = fabs(f(x2)-f(x[31])); // to get an order of magnitude of the variation of V
-    double gamma = scale/200; // learning rate
-    double h = (x2-x1)/5e4;
-    double grad = 10.;
+    int N = 50*d; // number of different starting points, the linear dependence on d was chosen arbitrarily
     
-    for (int n=0; n<N; n++)
-    {
-        while (fabs(grad) > 1e-7)
-        {
-            grad = der5_c(f,x[n],h);
-            x[n] -= gamma*grad;
+    // create grid of N randomly placed points in a hypercube [-x1, x2]^d
+    //TODO: use Poisson-disk sampling or another pseudorandom algorithm instead of simple rand()
+    double X0[N][d];
+    double F0[N];
+    for (int n=0; n<N; n++) {
+        for (int i=0; i<d; i++) {
+            X0[n][i] = (rand()/(RAND_MAX+1.))*fabs(x2-x1) + x1;
         }
     }
-    //printf("grad = %0.10f\tr=%f\n", grad, r);
     
-    pointwise(f,x,N); // put f(x) instead of x in x
-    return x[double_min_index(x, N)];
+    double temp_X[d];
+    for (int n=0; n<N; n++) {
+        for (int i=0; i<d; i++)
+            temp_X[i] = X0[n][i];
+            
+        //F0[n] = f(X0[n]);
+        F0[n] = f(temp_X);
+    }
+    
+    int idxmin = double_min_index(F0, N);
+    int idxmax = double_max_index(F0, N);
+    if (ascent) {
+        for (int i=0; i<d; i++)
+            x[i] = X0[idxmax][i];   // starting point for the gradient ascent
+    }
+    else    {
+        for (int i=0; i<d; i++)
+            x[i] = X0[idxmin][i];   // starting point for the gradient descent
+    }
+    
+    // to get an order of magnitude of the variation of V
+    double scale = fabs(F0[double_max_index(F0, N)] - F0[double_min_index(F0, N)]);
+    printf("\nscale = %f - %f = %f", F0[double_max_index(F0, N)], F0[double_min_index(F0, N)], scale);
+    double gamma = 0.00001; // learning rate
+    double h = fabs(x2-x1)/1e6;
+    double grad[d];
+    for (int i=0; i<d; i++)
+        grad[i] = 10.0;
+    
+    int count = 0;
+    int sign;
+    if (ascent) {
+        sign = -1;
+    }
+    else    {
+        sign = 1;
+    }
+    
+    while (max_absd(grad,d) > 1e-4)
+    {
+        for (int i=0; i<d; i++)
+        {
+            grad[i] = der5_part(f,x,d,i,h); // spostare qui invece di usare funzione?
+            x[i] -= sign*gamma*grad[i];
+            printf("df/da%d = %f\n", i, grad[i]);
+            printf("a[%d] = %f\n", i, x[i]);
+            printf("\n");
+        }
+        count++;
+    }
+    printf("\nxmin = %f, %f\t %d steps performed", x[0], x[1], count);
+    
 }
+
+
 
 void multiply3matrix (double *a, double *c, double *b, double *e, uint16_t n){ //the fourth input is the result of the multiplication, 
     gsl_matrix_view A = gsl_matrix_view_array(a, n, n);
