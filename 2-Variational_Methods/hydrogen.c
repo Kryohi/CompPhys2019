@@ -16,10 +16,9 @@
 void multiplytest(void);
 
 
-
-void  gen_eigenvalues_nxn_gsl(double *a, double *b,uint16_t n)
+// returns first eigenvalue
+double gen_eigenvalues_nxn_gsl(double *a, double *b, uint16_t n)
 {
-    
     
     gsl_matrix_view A = gsl_matrix_view_array(a, n, n);
     gsl_matrix_view B = gsl_matrix_view_array(b, n, n);
@@ -31,22 +30,16 @@ void  gen_eigenvalues_nxn_gsl(double *a, double *b,uint16_t n)
     gsl_eigen_gensymmv(&A.matrix, &B.matrix, eval1, evec1, w);
     gsl_eigen_gensymmv_free(w);
 
-    {
-    int i;
-
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
       {
-        double eval_i
-           = gsl_vector_get (eval1, i);
-        gsl_vector_view evec_i
-           = gsl_matrix_column (evec1, i);
+        double eval_i = gsl_vector_get (eval1, i);
+        gsl_vector_view evec_i = gsl_matrix_column (evec1, i);
 
-        printf ("eigenvalue = %g\n", eval_i);
         //printf ("eigenvector = \n");
         //gsl_vector_fprintf (stdout,&evec_i.vector, "%g");
       }
-  }
-
+      
+    return gsl_vector_get(eval1, 0);
 }
 
 
@@ -156,9 +149,61 @@ void gen_eigenvalues_nxn_man(double *a, double *b, uint16_t n){
 }
 
 
+double find_2G(double *a)
+{
+    double pi15 = sqrt(M_PI*M_PI*M_PI);
+    
+    double H2[]={3.*pi15/(2.*sqrt(2.*a[0]))-3.*pi15/(sqrt(2.*a[0]))-M_PI/a[0], 
+        6.*pi15*a[1]*a[1]/(pow(a[0]+a[1],2.5))-6.*pi15*a[1]/(pow(a[0]+a[1],1.5))-2.*M_PI/(a[0]+a[1]),
+        6.*pi15*a[1]*a[1]/(pow(a[0]+a[1],2.5))-6.*pi15*a[1]/(pow(a[0]+a[1],1.5))-2.*M_PI/(a[0]+a[1]),
+        3.*pi15/(2.*sqrt(2.*a[1]))-3.*pi15/(sqrt(2.*a[1]))-M_PI/a[1]
+    };
+    double S2[]={pi15/(pow(2.*a[0],1.5)),
+                 pi15/(pow(a[0]+a[1],1.5)),
+                 pi15/(pow(a[0]+a[1],1.5)),
+                 pi15/(pow(2.*a[1],1.5))};
+    
+    double first_eig = gen_eigenvalues_nxn_gsl(H2, S2, 2); 
+    printf("a1, a2 = %f, %f\teigenvalue = %f\n", a[0], a[1], first_eig);
+    return first_eig;
+}
+
+double find_3G(double *a)   
+{
+    double pi15 = sqrt(M_PI*M_PI*M_PI);
+
+    double H3[]={3.*pi15/(2.*sqrt(2.*a[0]))-3.*pi15/(sqrt(2.*a[0]))-M_PI/a[0], 
+        6.*pi15*a[1]*a[1]/(pow(a[0]+a[1],2.5))-6.*pi15*a[1]/(pow(a[0]+a[1],1.5))-2.*M_PI/(a[0]+a[1]),
+        6.*pi15*a[0]*a[0]/(pow(a[0]+a[2],2.5))-6.*pi15*a[0]/(pow(a[0]+a[2],1.5))-2.*M_PI/(a[0]+a[2]),
+        6.*pi15*a[1]*a[1]/(pow(a[0]+a[1],2.5))-6.*pi15*a[1]/(pow(a[0]+a[1],1.5))-2.*M_PI/(a[0]+a[1]),
+        3.*pi15/(2.*sqrt(2.*a[1]))-3.*pi15/(sqrt(2.*a[1]))-M_PI/a[1],
+        6.*pi15*a[2]*a[2]/(pow(a[1]+a[2],2.5))-6.*pi15*a[2]/(pow(a[1]+a[2],1.5))-2.*M_PI/(a[1]+a[2]),
+        6.*pi15*a[0]*a[0]/(pow(a[0]+a[2],2.5))-6.*pi15*a[0]/(pow(a[0]+a[2],1.5))-2.*M_PI/(a[0]+a[2]),
+        6.*pi15*a[1]*a[1]/(pow(a[1]+a[2],2.5))-6.*pi15*a[1]/(pow(a[1]+a[2],1.5))-2.*M_PI/(a[1]+a[2]),
+        3.*pi15/(2.*sqrt(2.*a[2]))-3.*pi15/(sqrt(2.*a[2]))-M_PI/a[2]
+        };
+        
+    double S3[]={pi15/(pow(2.*a[0],1.5)),
+                 pi15/(pow(a[0]+a[1],1.5)),
+                 pi15/(pow(a[0]+a[2],1.5)),
+                 pi15/(pow(a[0]+a[1],1.5)),
+                 pi15/(pow(2.*a[1],1.5)),
+                 pi15/(pow(a[1]+a[2],1.5)),
+                 pi15/(pow(a[0]+a[2],1.5)),
+                 pi15/(pow(a[1]+a[2],1.5)),
+                 pi15/(pow(2.*a[2],1.5)),
+        };
+    
+    double first_eig = gen_eigenvalues_nxn_gsl(H3, S3, 3);
+    printf("a1, a2, a3 = %f, %f, %f\teigenvalue = %f\n", a[0], a[1], a[2], first_eig);
+    return first_eig;
+}
+
+
+
 int main(int argc, char** argv)
 { 
-    
+    double pi15 = sqrt(M_PI*M_PI*M_PI);
     
     /*double a[] = {1.,5.,6.,
                   5.,1.,5.,
@@ -168,27 +213,28 @@ int main(int argc, char** argv)
                   1.,0.,2.};*/
     
     // Caso con singola gaussiana
-    double Et=-0.5;
+    /*double Et=-0.5;
     double a1s=a1;
+    
     while(abs(Et-E)>0.1){
-        double H1[]={3.*pow(M_PI,1.5)/(2.*sqrt(2.*a1s))-3.*pow(M_PI,1.5)/(sqrt(2.*a1s))-M_PI/a1s};
-        double S1[]={pow(M_PI, 1.5)/(pow(2.*a1s,1.5))};
+        double H1[]={3.*pi15/(2.*sqrt(2.*a1s))-3.*pi15/(sqrt(2.*a1s))-M_PI/a1s};
+        double S1[]={pi15/(pow(2.*a1s,1.5))};
             
         gen_eigenvalues_nxn_gsl(H1, S1,1); //generalized eigenvalue problem with gsl
-    }
+    }*/
     // doppia gaussiana //NB PER RENDERE SIMMETRICA LA MATRICE USO IL FATTO CHE E' AUTOAGGIUNTA E AGISCE A SX QUANDO SERVE
     
     double a1d=a1; 
     double a2d=a2;
-    double H2[]={3.*pow(M_PI,1.5)/(2.*sqrt(2.*a1d))-3.*pow(M_PI,1.5)/(sqrt(2.*a1d))-M_PI/a1d, 
-        6.*pow(M_PI,1.5)*a2d*a2d/(pow(a1d+a2d,2.5))-6.*pow(M_PI,1.5)*a2d/(pow(a1d+a2d,1.5))-2.*M_PI/(a1d+a2d),
-        6.*pow(M_PI,1.5)*a2d*a2d/(pow(a1d+a2d,2.5))-6.*pow(M_PI,1.5)*a2d/(pow(a1d+a2d,1.5))-2.*M_PI/(a1d+a2d),
-        3.*pow(M_PI,1.5)/(2.*sqrt(2.*a2d))-3.*pow(M_PI,1.5)/(sqrt(2.*a2d))-M_PI/a2d
+    double H2[]={3.*pi15/(2.*sqrt(2.*a1d))-3.*pi15/(sqrt(2.*a1d))-M_PI/a1d, 
+        6.*pi15*a2d*a2d/(pow(a1d+a2d,2.5))-6.*pi15*a2d/(pow(a1d+a2d,1.5))-2.*M_PI/(a1d+a2d),
+        6.*pi15*a2d*a2d/(pow(a1d+a2d,2.5))-6.*pi15*a2d/(pow(a1d+a2d,1.5))-2.*M_PI/(a1d+a2d),
+        3.*pi15/(2.*sqrt(2.*a2d))-3.*pi15/(sqrt(2.*a2d))-M_PI/a2d
     };
-    double S2[]={pow(M_PI, 1.5)/(pow(2.*a1d,1.5)),
-                 pow(M_PI, 1.5)/(pow(a1d+a2d,1.5)),
-                 pow(M_PI, 1.5)/(pow(a1d+a2d,1.5)),
-                 pow(M_PI, 1.5)/(pow(2.*a2d,1.5))};
+    double S2[]={pi15/(pow(2.*a1d,1.5)),
+                 pi15/(pow(a1d+a2d,1.5)),
+                 pi15/(pow(a1d+a2d,1.5)),
+                 pi15/(pow(2.*a2d,1.5))};
     
     gen_eigenvalues_nxn_gsl(H2, S2,2); 
     
@@ -197,29 +243,29 @@ int main(int argc, char** argv)
     double a1t=a1; 
     double a2t=a2;
     double a3t=a3;
-    double H3[]={3.*pow(M_PI,1.5)/(2.*sqrt(2.*a1t))-3.*pow(M_PI,1.5)/(sqrt(2.*a1t))-M_PI/a1t, 
-        6.*pow(M_PI,1.5)*a2t*a2t/(pow(a1t+a2t,2.5))-6.*pow(M_PI,1.5)*a2t/(pow(a1t+a2t,1.5))-2.*M_PI/(a1t+a2t),
-        6.*pow(M_PI,1.5)*a1t*a1t/(pow(a1t+a3t,2.5))-6.*pow(M_PI,1.5)*a1t/(pow(a1t+a3t,1.5))-2.*M_PI/(a1t+a3t),
-        6.*pow(M_PI,1.5)*a2t*a2t/(pow(a1t+a2t,2.5))-6.*pow(M_PI,1.5)*a2t/(pow(a1t+a2t,1.5))-2.*M_PI/(a1t+a2t),
-        3.*pow(M_PI,1.5)/(2.*sqrt(2.*a2t))-3.*pow(M_PI,1.5)/(sqrt(2.*a2t))-M_PI/a2t,
-        6.*pow(M_PI,1.5)*a3t*a3t/(pow(a2t+a3t,2.5))-6.*pow(M_PI,1.5)*a3t/(pow(a2t+a3t,1.5))-2.*M_PI/(a2t+a3t),
-        6.*pow(M_PI,1.5)*a1t*a1t/(pow(a1t+a3t,2.5))-6.*pow(M_PI,1.5)*a1t/(pow(a1t+a3t,1.5))-2.*M_PI/(a1t+a3t),
-        6.*pow(M_PI,1.5)*a2t*a2t/(pow(a2t+a3t,2.5))-6.*pow(M_PI,1.5)*a2t/(pow(a2t+a3t,1.5))-2.*M_PI/(a2t+a3t),
-        3.*pow(M_PI,1.5)/(2.*sqrt(2.*a3t))-3.*pow(M_PI,1.5)/(sqrt(2.*a3t))-M_PI/a3t
+    double H3[]={3.*pi15/(2.*sqrt(2.*a1t))-3.*pi15/(sqrt(2.*a1t))-M_PI/a1t, 
+        6.*pi15*a2t*a2t/(pow(a1t+a2t,2.5))-6.*pi15*a2t/(pow(a1t+a2t,1.5))-2.*M_PI/(a1t+a2t),
+        6.*pi15*a1t*a1t/(pow(a1t+a3t,2.5))-6.*pi15*a1t/(pow(a1t+a3t,1.5))-2.*M_PI/(a1t+a3t),
+        6.*pi15*a2t*a2t/(pow(a1t+a2t,2.5))-6.*pi15*a2t/(pow(a1t+a2t,1.5))-2.*M_PI/(a1t+a2t),
+        3.*pi15/(2.*sqrt(2.*a2t))-3.*pi15/(sqrt(2.*a2t))-M_PI/a2t,
+        6.*pi15*a3t*a3t/(pow(a2t+a3t,2.5))-6.*pi15*a3t/(pow(a2t+a3t,1.5))-2.*M_PI/(a2t+a3t),
+        6.*pi15*a1t*a1t/(pow(a1t+a3t,2.5))-6.*pi15*a1t/(pow(a1t+a3t,1.5))-2.*M_PI/(a1t+a3t),
+        6.*pi15*a2t*a2t/(pow(a2t+a3t,2.5))-6.*pi15*a2t/(pow(a2t+a3t,1.5))-2.*M_PI/(a2t+a3t),
+        3.*pi15/(2.*sqrt(2.*a3t))-3.*pi15/(sqrt(2.*a3t))-M_PI/a3t
     };
-    double S3[]={pow(M_PI, 1.5)/(pow(2.*a1t,1.5)),
-                 pow(M_PI, 1.5)/(pow(a1t+a2t,1.5)),
-                 pow(M_PI, 1.5)/(pow(a1t+a3t,1.5)),
-                 pow(M_PI, 1.5)/(pow(a1t+a2t,1.5)),
-                 pow(M_PI, 1.5)/(pow(2.*a2t,1.5)),
-                 pow(M_PI, 1.5)/(pow(a2t+a3t,1.5)),
-                 pow(M_PI, 1.5)/(pow(a1t+a3t,1.5)),
-                 pow(M_PI, 1.5)/(pow(a2t+a3t,1.5)),
-                 pow(M_PI, 1.5)/(pow(2.*a3t,1.5)),
+    double S3[]={pi15/(pow(2.*a1t,1.5)),
+                 pi15/(pow(a1t+a2t,1.5)),
+                 pi15/(pow(a1t+a3t,1.5)),
+                 pi15/(pow(a1t+a2t,1.5)),
+                 pi15/(pow(2.*a2t,1.5)),
+                 pi15/(pow(a2t+a3t,1.5)),
+                 pi15/(pow(a1t+a3t,1.5)),
+                 pi15/(pow(a2t+a3t,1.5)),
+                 pi15/(pow(2.*a3t,1.5)),
     };
     
    
-    gen_eigenvalues_nxn_gsl(H3, S3,3); 
+    gen_eigenvalues_nxn_gsl(H3, S3, 3);
     /*double aa[] = {1.,5.,6.,
                   5.,1.,5.,
                   6.,5.,1.};
@@ -229,6 +275,15 @@ int main(int argc, char** argv)
     gen_eigenvalues_nxn_man(aa, bb, 3);
     //multiply3matrix(w, c, v, r, 3); function for three matrix product
     */
+    
+    double param[3];
+    grad_descent(find_3G, 1e-6, 2.0, 3, param, 1);
+    
+    printf("\nmin = %f, %f, %f", param[0], param[1], param[2]);
+    
+    double param2d[3];
+    grad_descent(find_3G, 1e-6, 1.0, 2, param2d, 1);
+    printf("\nmin = %f, %f", param2d[0], param2d[1]);
     
     return 0;
 }
