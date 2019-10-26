@@ -236,7 +236,8 @@ int main(int argc, char** argv)
                  pi15/(pow(a1d+a2d,1.5)),
                  pi15/(pow(2.*a2d,1.5))};
     
-    gen_eigenvalues_nxn_gsl(H2, S2,2); 
+    double e2 = gen_eigenvalues_nxn_gsl(H2, S2,2); 
+    printf("\nFirst eig of H2S2 = %f\n", e2);
     
     //Tripla gaussiana
     
@@ -265,7 +266,8 @@ int main(int argc, char** argv)
     };
     
    
-    gen_eigenvalues_nxn_gsl(H3, S3, 3);
+    double e3 = gen_eigenvalues_nxn_gsl(H3, S3, 3);
+    printf("\nFirst eig of H3S3 = %f\n", e3);
     /*double aa[] = {1.,5.,6.,
                   5.,1.,5.,
                   6.,5.,1.};
