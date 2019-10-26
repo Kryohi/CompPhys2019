@@ -6,7 +6,7 @@
 /* STO-3G parameters */
 #define a1 0.109818
 #define a2 0.405771
-#define a3 0.222776 //NB PROBLEMA QUI: PEDERIVA SCRIVE 2.22776 ma altri ci mettono lo 0 davanti
+#define a3 2.22776 //NB PROBLEMA QUI: PEDERIVA SCRIVE 2.22776 ma altri ci mettono lo 0 davanti
 
 // STO-2G parameters
 #define a12g 0.151623

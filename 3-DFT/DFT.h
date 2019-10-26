@@ -14,6 +14,7 @@
 #include <fftw3.h>
 #include "../matematicose.c"
 #include "../misccose.c"
+#include "../numerov.c"
 
 typedef struct Spectrum { 
     size_t xmax;

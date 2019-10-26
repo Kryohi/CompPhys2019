@@ -1,0 +1,124 @@
+.LCPI0_0:
+        .quad   4602678819172646912     # double 0.5
+.LCPI0_1:
+        .quad   4584664420663164928     # double 0.03125
+localDensityAndMobility:                # @localDensityAndMobility
+        push    rbp
+        push    r15
+        push    r14
+        push    r13
+        push    r12
+        push    rbx
+        sub     rsp, 24
+        mov     r14, r8
+        mov     r15, rcx
+        mov     r12, rdx
+        mov     r13, rsi
+        vmovsd  qword ptr [rsp + 16], xmm1 # 8-byte Spill
+        vmovsd  qword ptr [rsp + 8], xmm0 # 8-byte Spill
+        mov     rbp, rdi
+        mov     edi, 3456
+        call    malloc
+        mov     rbx, rax
+        mov     edx, 3456
+        mov     rdi, rax
+        mov     rsi, rbp
+        call    memcpy
+        vmovsd  xmm3, qword ptr [rsp + 8] # 8-byte Reload
+        vmovsd  xmm0, qword ptr [rip + .LCPI0_0] # xmm0 = mem[0],zero
+        vmulsd  xmm1, xmm3, xmm0
+        vmulsd  xmm0, xmm0, qword ptr [rsp + 16] # 8-byte Folded Reload
+        vmovddup        xmm1, xmm1      # xmm1 = xmm1[0,0]
+        mov     eax, 9
+.LBB0_1:                                # =>This Inner Loop Header: Depth=1
+        vaddpd  xmm2, xmm1, xmmword ptr [rbx + 8*rax - 72]
+        vmovupd xmmword ptr [rbx + 8*rax - 72], xmm2
+        vaddsd  xmm2, xmm0, qword ptr [rbx + 8*rax - 56]
+        vmovsd  qword ptr [rbx + 8*rax - 56], xmm2
+        vaddpd  xmm2, xmm1, xmmword ptr [rbx + 8*rax - 48]
+        vmovupd xmmword ptr [rbx + 8*rax - 48], xmm2
+        vaddsd  xmm2, xmm0, qword ptr [rbx + 8*rax - 32]
+        vmovsd  qword ptr [rbx + 8*rax - 32], xmm2
+        vaddpd  xmm2, xmm1, xmmword ptr [rbx + 8*rax - 24]
+        vmovupd xmmword ptr [rbx + 8*rax - 24], xmm2
+        vaddsd  xmm2, xmm0, qword ptr [rbx + 8*rax - 8]
+        vmovsd  qword ptr [rbx + 8*rax - 8], xmm2
+        lea     rcx, [8*rax]
+        vaddpd  xmm2, xmm1, xmmword ptr [rbx + 8*rax]
+        vmovupd xmmword ptr [rbx + 8*rax], xmm2
+        or      rcx, 16
+        vaddsd  xmm2, xmm0, qword ptr [rbx + rcx]
+        vmovsd  qword ptr [rbx + rcx], xmm2
+        add     rax, 12
+        cmp     rax, 441
+        jne     .LBB0_1
+        vmulsd  xmm0, xmm3, qword ptr [rip + .LCPI0_1]
+        xor     r8d, r8d
+.LBB0_3:                                # =>This Loop Header: Depth=1
+        mov     rax, r8
+        shl     rax, 6
+        lea     r9, [rax + 4*rax]
+        vcvtsi2sd       xmm1, xmm7, r8d
+        vmulsd  xmm1, xmm0, xmm1
+        add     r8, 1
+        vcvtsi2sd       xmm2, xmm7, r8d
+        vmulsd  xmm2, xmm0, xmm2
+        xor     r10d, r10d
+.LBB0_4:                                #   Parent Loop BB0_3 Depth=1
+        lea     rax, [r10 + 4*r10]
+        lea     r11, [r9 + 2*rax]
+        vcvtsi2sd       xmm3, xmm7, r10d
+        vmulsd  xmm3, xmm0, xmm3
+        add     r10, 1
+        vcvtsi2sd       xmm4, xmm7, r10d
+        vmulsd  xmm4, xmm0, xmm4
+        xor     edi, edi
+.LBB0_5:                                #   Parent Loop BB0_3 Depth=1
+        lea     rax, [r11 + rdi]
+        lea     rbp, [rdi + 1]
+        mov     rcx, r15
+        mov     edx, 4
+.LBB0_6:                                #   Parent Loop BB0_3 Depth=1
+        vmovsd  xmm5, qword ptr [rbx + 4*rdx - 16] # xmm5 = mem[0],zero
+        vucomisd        xmm5, xmm1
+        jbe     .LBB0_14
+        vucomisd        xmm2, xmm5
+        jbe     .LBB0_14
+        vmovsd  xmm5, qword ptr [rbx + 4*rdx - 8] # xmm5 = mem[0],zero
+        vucomisd        xmm5, xmm3
+        jbe     .LBB0_14
+        vucomisd        xmm4, xmm5
+        jbe     .LBB0_14
+        vmovsd  xmm5, qword ptr [rbx + 4*rdx] # xmm5 = mem[0],zero
+        vucomisd        xmm5, qword ptr [r13 + 8*rdi]
+        jbe     .LBB0_14
+        vmovsd  xmm6, qword ptr [r13 + 8*rdi + 8] # xmm6 = mem[0],zero
+        vucomisd        xmm6, xmm5
+        jbe     .LBB0_14
+        add     qword ptr [r12 + 8*rax], 1
+        mov     esi, dword ptr [rcx]
+        cmp     rax, rsi
+        je      .LBB0_14
+        add     qword ptr [r14 + 8*rax], 1
+        mov     dword ptr [rcx], eax
+.LBB0_14:                               #   in Loop: Header=BB0_6 Depth=4
+        add     rdx, 6
+        add     rcx, 4
+        cmp     rdx, 868
+        jne     .LBB0_6
+        mov     rdi, rbp
+        cmp     rbp, 10
+        jne     .LBB0_5
+        cmp     r10, 32
+        jne     .LBB0_4
+        cmp     r8, 32
+        jne     .LBB0_3
+        mov     rdi, rbx
+        add     rsp, 24
+        pop     rbx
+        pop     r12
+        pop     r13
+        pop     r14
+        pop     r15
+        pop     rbp
+        jmp     free                    # TAILCALL

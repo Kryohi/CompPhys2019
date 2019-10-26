@@ -1,5 +1,5 @@
-#include "numerov.c"
-#include "misccose.c"
+#include "../numerov.c"
+#include "../misccose.c"
 
 double V_lj(double x);
 double V_fastlj(double dr);
