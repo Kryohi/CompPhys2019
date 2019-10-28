@@ -153,10 +153,10 @@ double find_2G(double *a)
 {
     double pi15 = sqrt(M_PI*M_PI*M_PI);
     
-    double H2[]={3.*pi15/(2.*sqrt(2.*a[0]))-3.*pi15/(sqrt(2.*a[0]))-M_PI/a[0], 
-        6.*pi15*a[1]*a[1]/(pow(a[0]+a[1],2.5))-6.*pi15*a[1]/(pow(a[0]+a[1],1.5))-2.*M_PI/(a[0]+a[1]),
-        6.*pi15*a[1]*a[1]/(pow(a[0]+a[1],2.5))-6.*pi15*a[1]/(pow(a[0]+a[1],1.5))-2.*M_PI/(a[0]+a[1]),
-        3.*pi15/(2.*sqrt(2.*a[1]))-3.*pi15/(sqrt(2.*a[1]))-M_PI/a[1]
+    double H2[]={M_PI*(-4.+3*sqrt(2.*M_PI*a[0]))/(4.*a[0]), 
+        -2.*M_PI*(a[1]*sqrt(a[0]+a[1])+a[0]*(-3.*sqrt(M_PI)*a[1]+sqrt(a[0]+a[1])))/(pow(a[0]+a[1],2.5)),
+        -2.*M_PI*(a[1]*sqrt(a[0]+a[1])+a[0]*(-3.*sqrt(M_PI)*a[1]+sqrt(a[0]+a[1])))/(pow(a[0]+a[1],2.5)),
+        M_PI*(-4.+3*sqrt(2.*M_PI*a[1]))/(4.*a[1])
     };
     double S2[]={pi15/(pow(2.*a[0],1.5)),
                  pi15/(pow(a[0]+a[1],1.5)),
@@ -172,15 +172,15 @@ double find_3G(double *a)
 {
     double pi15 = sqrt(M_PI*M_PI*M_PI);
 
-    double H3[]={3.*pi15/(2.*sqrt(2.*a[0]))-3.*pi15/(sqrt(2.*a[0]))-M_PI/a[0], 
-        6.*pi15*a[1]*a[1]/(pow(a[0]+a[1],2.5))-6.*pi15*a[1]/(pow(a[0]+a[1],1.5))-2.*M_PI/(a[0]+a[1]),
-        6.*pi15*a[0]*a[0]/(pow(a[0]+a[2],2.5))-6.*pi15*a[0]/(pow(a[0]+a[2],1.5))-2.*M_PI/(a[0]+a[2]),
-        6.*pi15*a[1]*a[1]/(pow(a[0]+a[1],2.5))-6.*pi15*a[1]/(pow(a[0]+a[1],1.5))-2.*M_PI/(a[0]+a[1]),
-        3.*pi15/(2.*sqrt(2.*a[1]))-3.*pi15/(sqrt(2.*a[1]))-M_PI/a[1],
-        6.*pi15*a[2]*a[2]/(pow(a[1]+a[2],2.5))-6.*pi15*a[2]/(pow(a[1]+a[2],1.5))-2.*M_PI/(a[1]+a[2]),
-        6.*pi15*a[0]*a[0]/(pow(a[0]+a[2],2.5))-6.*pi15*a[0]/(pow(a[0]+a[2],1.5))-2.*M_PI/(a[0]+a[2]),
-        6.*pi15*a[1]*a[1]/(pow(a[1]+a[2],2.5))-6.*pi15*a[1]/(pow(a[1]+a[2],1.5))-2.*M_PI/(a[1]+a[2]),
-        3.*pi15/(2.*sqrt(2.*a[2]))-3.*pi15/(sqrt(2.*a[2]))-M_PI/a[2]
+    double H3[]={M_PI*(-4.+3*sqrt(2.*M_PI*a[0]))/(4.*a[0]), 
+        -2.*M_PI*(a[1]*sqrt(a[0]+a[1])+a[0]*(-3.*sqrt(M_PI)*a[1]+sqrt(a[0]+a[1])))/(pow(a[0]+a[1],2.5)),
+        -2.*M_PI*(a[2]*sqrt(a[0]+a[2])+a[0]*(-3.*sqrt(M_PI)*a[2]+sqrt(a[0]+a[2])))/(pow(a[0]+a[1],2.5)),
+        -2.*M_PI*(a[1]*sqrt(a[0]+a[1])+a[0]*(-3*sqrt(M_PI)*a[1]+sqrt(a[0]+a[1])))/(pow(a[0]+a[1],2.5)),
+        M_PI*(-4.+3*sqrt(2.*M_PI*a[1]))/(4.*a[1]),
+        -2.*M_PI*(a[2]*sqrt(a[1]+a[2])+a[1]*(-3.*sqrt(M_PI)*a[2]+sqrt(a[1]+a[2])))/(pow(a[0]+a[1],2.5)),
+        -2.*M_PI*(a[2]*sqrt(a[0]+a[2])+a[0]*(-3.*sqrt(M_PI)*a[2]+sqrt(a[0]+a[2])))/(pow(a[0]+a[1],2.5)),
+        -2.*M_PI*(a[2]*sqrt(a[1]+a[2])+a[1]*(-3.*sqrt(M_PI)*a[2]+sqrt(a[1]+a[2])))/(pow(a[0]+a[1],2.5)),
+        M_PI*(-4.+3*sqrt(2.*M_PI*a[3]))/(4.*a[3])
         };
         
     double S3[]={pi15/(pow(2.*a[0],1.5)),
@@ -222,7 +222,7 @@ int main(int argc, char** argv)
             
         gen_eigenvalues_nxn_gsl(H1, S1,1); //generalized eigenvalue problem with gsl
     }*/
-    // doppia gaussiana //NB PER RENDERE SIMMETRICA LA MATRICE USO IL FATTO CHE E' AUTOAGGIUNTA E AGISCE A SX QUANDO SERVE
+    // doppia gaussiana 
     
     double a1d=a1; 
     double a2d=a2;
