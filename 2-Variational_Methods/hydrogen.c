@@ -180,7 +180,7 @@ double find_3G(double *a)
         -2.*M_PI*(a[2]*sqrt(a[1]+a[2])+a[1]*(-3.*sqrt(M_PI)*a[2]+sqrt(a[1]+a[2])))/(pow(a[1]+a[2],2.5)),
         -2.*M_PI*(a[2]*sqrt(a[0]+a[2])+a[0]*(-3.*sqrt(M_PI)*a[2]+sqrt(a[0]+a[2])))/(pow(a[0]+a[2],2.5)),
         -2.*M_PI*(a[2]*sqrt(a[1]+a[2])+a[1]*(-3.*sqrt(M_PI)*a[2]+sqrt(a[1]+a[2])))/(pow(a[1]+a[2],2.5)),
-        M_PI*(-4.+3*sqrt(2.*M_PI*a[3]))/(4.*a[3])
+        M_PI*(-4.+3*sqrt(2.*M_PI*a[2]))/(4.*a[2])
         };
         
     double S3[]={pi15/(pow(2.*a[0],1.5)),
@@ -246,13 +246,13 @@ int main(int argc, char** argv)
     double a3t=a3;
     double H3[]={M_PI*(-4.+3*sqrt(2.*M_PI*a1t))/(4.*a1t), 
         -2.*M_PI*(a2t*sqrt(a1t+a2t)+a1t*(-3.*sqrt(M_PI)*a1t+sqrt(a1t+a2t)))/(pow(a1t+a1t,2.5)),
-        -2.*M_PI*(a3t*sqrt(a1t+a3t)+a1t*(-3.*sqrt(M_PI)*a3t+sqrt(a1t+a3t])))/(pow(a1t+a3t,2.5)),
-        -2.*M_PI*(a2t*sqrt(a1t+a2t)+a1t*(-3*sqrt(M_PI)*a2t]+sqrt(a1t+a2t)))/(pow(a1t+a2t,2.5)),
-        M_PI*(-4.+3*sqrt(2.*M_PI*a[1]))/(4.*a[1]),
-        -2.*M_PI*(a3t*sqrt(a2t+a3t)+a2t*(-3.*sqrt(M_PI)*a3t+sqrt(a2t+a3t])))/(pow(a2t+a3t,2.5)),
-        -2.*M_PI*(a3t*sqrt(a1t+a3t)+a1t*(-3.*sqrt(M_PI)*a3t+sqrt(a1t+a3t])))/(pow(a1t+a3t,2.5)),
+        -2.*M_PI*(a3t*sqrt(a1t+a3t)+a1t*(-3.*sqrt(M_PI)*a3t+sqrt(a1t+a3t)))/(pow(a1t+a3t,2.5)),
+        -2.*M_PI*(a2t*sqrt(a1t+a2t)+a1t*(-3.*sqrt(M_PI)*a2t+sqrt(a1t+a2t)))/(pow(a1t+a2t,2.5)),
+        M_PI*(-4.+3*sqrt(2.*M_PI*a2t))/(4.*a2t),
+        -2.*M_PI*(a3t*sqrt(a2t+a3t)+a2t*(-3.*sqrt(M_PI)*a3t+sqrt(a2t+a3t)))/(pow(a2t+a3t,2.5)),
+        -2.*M_PI*(a3t*sqrt(a1t+a3t)+a1t*(-3.*sqrt(M_PI)*a3t+sqrt(a1t+a3t)))/(pow(a1t+a3t,2.5)),
         -2.*M_PI*(a3t*sqrt(a2t+a3t)+a2t*(-3.*sqrt(M_PI)*a2t+sqrt(a2t+a3t)))/(pow(a2t+a3t,2.5)),
-        M_PI*(-4.+3*sqrt(2.*M_PI*a3t]))/(4.*a3t)
+        M_PI*(-4.+3*sqrt(2.*M_PI*a3t))/(4.*a3t)
     };
     double S3[]={pi15/(pow(2.*a1t,1.5)),
                  pi15/(pow(a1t+a2t,1.5)),
