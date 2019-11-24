@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <lapacke.h>
 
 #define ABS(a)     (((a) < 0) ? -(a) : (a))
 #define MIN(a,b)   (((a) < (b)) ? (a) : (b))
@@ -48,6 +49,7 @@ main()
     fprintf(stdout, "\n");
   }
   fscanf(in,"%d", &n_alpha);
+  printf("nalpha = %d\n",n_alpha);
   if ( n_alpha > NALPX)  {
     fprintf(stderr, "n_alpha (%d) > nalpx (%d)\n",n_alpha, NALPX);
     exit (1);
@@ -59,6 +61,7 @@ main()
   for ( ia = 0 ; ia < n_alpha ; ++ia ) {
     fscanf(in,"%lf", &alpha[ia]);
   }
+    printf("alpha0 = %f\t alpha1 = %f\n",alpha[0],alpha[1]);
   fclose(in);
 
   e = (double *) malloc ( n_alpha * sizeof (double) );
@@ -174,7 +177,9 @@ main()
      write (*,*) q */
   fclose(out);
   free(s); free(v); free(h); free(e); free (alpha);
-} /* end of main */
+}
+
+
 
 
 

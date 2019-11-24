@@ -12,18 +12,17 @@
 #define a12g 0.151623
 #define a22g 0.384244 //funziona meglio con gli altri ma non mi è chiaro perchè
 
+static FILE * f2G;
+static FILE * f3G;
 
-void multiplytest(void);
 
-
-// returns first eigenvalue
-double gen_eigenvalues_nxn_gsl(double *a, double *b, uint16_t n)
+// returns eigenvalues of the generalized eigenvalue problem
+void gen_eigenvalues_nxn_gsl(double *a, double *b, double *evals, const uint16_t n)
 {
-    
     gsl_matrix_view A = gsl_matrix_view_array(a, n, n);
     gsl_matrix_view B = gsl_matrix_view_array(b, n, n);
 
-    gsl_vector *eval1 = gsl_vector_alloc (n);
+    gsl_vector *eval1 = gsl_vector_alloc(n);
     gsl_matrix *evec1 = gsl_matrix_alloc(n, n);
     
     gsl_eigen_gensymmv_workspace * w = gsl_eigen_gensymmv_alloc(n);
@@ -31,15 +30,14 @@ double gen_eigenvalues_nxn_gsl(double *a, double *b, uint16_t n)
     gsl_eigen_gensymmv_free(w);
 
     for (int i = 0; i < n; i++)
-      {
-        double eval_i = gsl_vector_get (eval1, i);
-        gsl_vector_view evec_i = gsl_matrix_column (evec1, i);
-
+    {
+        evals[i] = gsl_vector_get(eval1, i);
+        //gsl_vector_view evec_i = gsl_matrix_column (evec1, i);
         //printf ("eigenvector = \n");
-        //gsl_vector_fprintf (stdout,&evec_i.vector, "%g");
-      }
-      
-    return gsl_vector_get(eval1, 0);
+        //gsl_vector_fprintf (stdout, &evec_i.vector, "%g");
+    }
+    
+    printf("eigenvalues = %f, %f, %f\n", evals[0], evals[1], evals[2]);
 }
 
 
@@ -163,9 +161,13 @@ double find_2G(double *a)
                  pi15/(pow(a[0]+a[1],1.5)),
                  pi15/(pow(2.*a[1],1.5))};
     
-    double first_eig = gen_eigenvalues_nxn_gsl(H2, S2, 2); 
-    printf("a1, a2 = %f, %f\teigenvalue = %f\n", a[0], a[1], first_eig);
-    return first_eig;
+    //double first_eig = gen_eigenvalues_nxn_gsl(H2, S2, 2); 
+    double eigs[2];
+    gen_eigenvalues_nxn_gsl(H2, S2, eigs, 2);
+    printf("a1, a2 = %f, %f\teigenvalue = %f, %f\n", a[0], a[1], eigs[0], eigs[1]);
+    fprintf(f2G, "%f, %f, %f, %f\n", a[0], a[1], eigs[0], eigs[1]);
+
+    return eigs[0];
 }
 
 double find_3G(double *a)   
@@ -194,15 +196,28 @@ double find_3G(double *a)
                  pi15/(pow(2.*a[2],1.5)),
         };
     
-    double first_eig = gen_eigenvalues_nxn_gsl(H3, S3, 3);
-    printf("a1, a2, a3 = %f, %f, %f\teigenvalue = %f\n", a[0], a[1], a[2], first_eig);
-    return first_eig;
+    //double first_eig = gen_eigenvalues_nxn_gsl(H3, S3, 3);
+    double eigs[3];
+    gen_eigenvalues_nxn_gsl(H3, S3, eigs, 3);
+    printf("a1, a2, a3 = %f, %f, %f\teigenvalues = %f\n", a[0], a[1], a[2], eigs[0]);
+    fprintf(f3G, "%f, %f, %f, %f, %f, %f\n", a[0], a[1], a[2], eigs[0], eigs[1], eigs[2]);
+    return eigs[0]; // - or +?
 }
 
 
 
 int main(int argc, char** argv)
 { 
+    // preparation of csv files
+    char filename[64];
+    
+    snprintf(filename, 64, "./descent_2G_%d.csv", 0);
+    f2G = fopen(filename, "w");
+    fprintf(f2G, "a0,a1,e0,e1\n");
+    
+    snprintf(filename, 64, "./descent_3G_%d.csv", 0);
+    f3G = fopen(filename, "w");
+    fprintf(f3G, "a0,a1,a1,e0,e1,e2\n");
     double pi15 = sqrt(M_PI*M_PI*M_PI);
     
     /*double a[] = {1.,5.,6.,
@@ -236,8 +251,9 @@ int main(int argc, char** argv)
                  pi15/(pow(a1d+a2d,1.5)),
                  pi15/(pow(2.*a2d,1.5))};
     
-    double e2 = gen_eigenvalues_nxn_gsl(H2, S2,2); 
-    printf("\nFirst eig of H2S2 = %f\n", e2);
+    double e2[2];
+    gen_eigenvalues_nxn_gsl(H2, S2, e2, 2); 
+    printf("\nFirst eig of H2S2 = %f\n", e2[0]);
     
     //Tripla gaussiana
     
@@ -245,7 +261,7 @@ int main(int argc, char** argv)
     double a2t=a2;
     double a3t=a3;
     double H3[]={M_PI*(-4.+3*sqrt(2.*M_PI*a1t))/(4.*a1t), 
-        -2.*M_PI*(a2t*sqrt(a1t+a2t)+a1t*(-3.*sqrt(M_PI)*a1t+sqrt(a1t+a2t)))/(pow(a1t+a1t,2.5)),
+        -2.*M_PI*(a2t*sqrt(a1t+a2t)+a1t*(-3.*sqrt(M_PI)*a1t+sqrt(a1t+a2t)))/(pow(a1t+a2t,2.5)),
         -2.*M_PI*(a3t*sqrt(a1t+a3t)+a1t*(-3.*sqrt(M_PI)*a3t+sqrt(a1t+a3t)))/(pow(a1t+a3t,2.5)),
         -2.*M_PI*(a2t*sqrt(a1t+a2t)+a1t*(-3.*sqrt(M_PI)*a2t+sqrt(a1t+a2t)))/(pow(a1t+a2t,2.5)),
         M_PI*(-4.+3*sqrt(2.*M_PI*a2t))/(4.*a2t),
@@ -265,9 +281,10 @@ int main(int argc, char** argv)
                  pi15/(pow(2.*a3t,1.5)),
     };
     
-   
-    double e3 = gen_eigenvalues_nxn_gsl(H3, S3, 3);
-    printf("\nFirst eig of H3S3 = %f\n", e3);
+    
+    double e3[3];
+    gen_eigenvalues_nxn_gsl(H3, S3, e3, 3);
+    printf("\nFirst eig of H3S3 = %f\t Second = %f\n", e3[0], e3[1]);
     /*double aa[] = {1.,5.,6.,
                   5.,1.,5.,
                   6.,5.,1.};
@@ -278,15 +295,34 @@ int main(int argc, char** argv)
     //multiply3matrix(w, c, v, r, 3); function for three matrix product
     */
     
-    double param[3];
-    grad_descent(find_3G, 1e-6, 2.0, 3, param, 1);
     
-    printf("\nmin = %f, %f, %f", param[0], param[1], param[2]);
     
-    double param2d[3];
-    grad_descent(find_3G, 1e-6, 1.0, 2, param2d, 1);
-    printf("\nmin = %f, %f", param2d[0], param2d[1]);
+    /*double param2d[2];
+    grad_descent(find_2G, 1e-6, 1.0, 2, param2d, 0, 1);
+    printf("\na_min = %f, %f\n", param2d[0], param2d[1]);    */
     
+   /* double param[3];
+    grad_descent(find_3G, 1e-6, 2.0, 3, param, 0, 0);
+    printf("\na_min = %f, %f, %f\n", param[0], param[1], param[2]);*/
+    
+    printf("\nFirst eig of H2S2 with STO2G = %f\t Second = %f\n", e2[0], e2[1]);
+    printf("First eig of H3S3 with STO3G = %f\t Second = %f\n", e3[0], e3[1]);
+    
+    fclose(f2G); fclose(f3G);
+    
+    out = fopen("wf2G.csv","w");
+    dr  = 0.02;
+    nrx = 500;
+    norm   = 0.0;
+    for (int i=1; i <= nrx; i++) 
+    {
+        r = dr*i;
+        f = exp(-a2[0]*r*r)*v[0] + exp(-a2[1]*r*r)*v[1];
+        prob = 4.0 * M_PI * r*r*f*f;
+        norm += prob*dr;
+        fprintf(out,"%f %f %f\n", r, f, prob);
+    }
+    fclose(out);
     return 0;
 }
 

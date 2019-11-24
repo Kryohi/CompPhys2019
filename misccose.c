@@ -1,3 +1,4 @@
+#pragma once
 #include "misccose.h"
 
 int * currentTime()

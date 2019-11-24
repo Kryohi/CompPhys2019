@@ -1,5 +1,6 @@
-
+#pragma once
 #include "matematicose.h"
+
 
 /*
     Simple math
@@ -129,7 +130,14 @@ int double_min_index(double * A, size_t length)
     
     return idx;
 }
-
+int double_min_abs_index(double * A, size_t length)
+{
+    int idx = 0;
+    for (int n=1; n<length; n++)
+        if ((fabs(A[n]) < fabs(A[idx])) && A[n]<0) idx = n;
+    
+    return idx;
+}
 
 inline double variance(const double * A, size_t length)
 {
@@ -289,7 +297,6 @@ double simpson_integral(double *fun, int xmax, double h){
 
 
 
-
 // Gradient descent (toward madness)
 
 double grad_descent_1D(double (*f)(double), double x1, double x2)
@@ -317,46 +324,54 @@ double grad_descent_1D(double (*f)(double), double x1, double x2)
 // Then starts the gradient descent from the point with the lowest value found.
 // The resulting minimum (array) is put into x
 
-void grad_descent(double (*f)(double*), double x1, double x2, uint16_t d, double * x, bool ascent)
+void grad_descent(double (*f)(double*), double x1, double x2, uint16_t d, double * x, bool ascent, bool printpoints)
 {
+    static FILE * rand_sampling;
+    if (printpoints && d==2) {
+        char filename[64];
+        snprintf(filename, 64, "./descent_rand_%dd.csv", d);
+        rand_sampling = fopen(filename, "w");
+        fprintf(rand_sampling, "a0,a1,e0\n");
+    }
+    
     srand(42);
-    int N = 50*d; // number of different starting points, the linear dependence on d was chosen arbitrarily
+    int N = 1000*d; // number of different starting points, the linear dependence on d was chosen arbitrarily
     
     // create grid of N randomly placed points in a hypercube [-x1, x2]^d
     //TODO: use Poisson-disk sampling or another pseudorandom algorithm instead of simple rand()
-    double X0[N][d];
-    double F0[N];
+    double X0[N][d];    // matrix of parameters
+    double F0[N];       // array of scalar results (first eigenvalue)
+    double temp_X[d];   // single parameter array
+    
     for (int n=0; n<N; n++) {
         for (int i=0; i<d; i++) {
-            X0[n][i] = (rand()/(RAND_MAX+1.))*fabs(x2-x1) + x1;
+            X0[n][i] = (rand()/(RAND_MAX+1.))*fabs(x2-x1) + x1; // random sampling of points in the given interval
+            temp_X[i] = X0[n][i];
+        }
+        F0[n] = f(temp_X);  // evaluate the function in X0[n]
+        if (printpoints && d==2) {
+            fprintf(rand_sampling, "%f, %f, %f\n", X0[n][0], X0[n][1], F0[n]);
         }
     }
     
-    double temp_X[d];
-    for (int n=0; n<N; n++) {
-        for (int i=0; i<d; i++)
-            temp_X[i] = X0[n][i];
-            
-        //F0[n] = f(X0[n]);
-        F0[n] = f(temp_X);
-    }
     
     int idxmin = double_min_index(F0, N);
+    int absidxmin = double_min_abs_index(F0, N);
     int idxmax = double_max_index(F0, N);
     if (ascent) {
         for (int i=0; i<d; i++)
-            x[i] = X0[idxmax][i];   // starting point for the gradient ascent
+            x[i] = X0[absidxmin][i];   // starting point for the gradient ascent
     }
     else    {
         for (int i=0; i<d; i++)
-            x[i] = X0[idxmin][i];   // starting point for the gradient descent
+            x[i] = X0[absidxmin][i];   // starting point for the gradient descent
     }
     
     // to get an order of magnitude of the variation of V
     double scale = fabs(F0[double_max_index(F0, N)] - F0[double_min_index(F0, N)]);
     printf("\nscale = %f - %f = %f", F0[double_max_index(F0, N)], F0[double_min_index(F0, N)], scale);
-    double gamma = 0.00001; // learning rate
-    double h = fabs(x2-x1)/1e6;
+    double gamma = 0.0001; // learning rate
+    double h = fabs(x2-x1)/1e5;
     double grad[d];
     for (int i=0; i<d; i++)
         grad[i] = 10.0;
@@ -383,7 +398,7 @@ void grad_descent(double (*f)(double*), double x1, double x2, uint16_t d, double
         count++;
     }
     printf("\nxmin = %f, %f\t %d steps performed", x[0], x[1], count);
-    
+    if (printpoints && d==2) fclose(rand_sampling);
 }
 
 
