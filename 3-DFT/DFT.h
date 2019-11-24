@@ -7,23 +7,17 @@
 #include <string.h>
 #include <limits.h>
 #include <complex.h>
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_eigen.h>
-#include <gsl/gsl_permutation.h>
+//#include <gsl/gsl_math.h>
+//#include <gsl/gsl_blas.h>
+//#include <gsl/gsl_eigen.h>
+//#include <gsl/gsl_permutation.h>
 #include <fftw3.h>
 #include "../matematicose.c"
 #include "../misccose.c"
 #include "../numerov.c"
 
-typedef struct Spectrum { 
-    size_t xmax;
-    int nmax;
-    double * EE;
-    double * eigfuns;  // xmax*nmax 1D array
-} Spectrum;
+double V_ks(double r, double *rho);
+double local_energy(double rho);
+double E_ks(double *rho);
 
-typedef struct dArray { 
-    size_t length;
-    double * data;
-} dArray;
+

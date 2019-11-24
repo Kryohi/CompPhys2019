@@ -1,4 +1,3 @@
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -9,8 +8,8 @@
 #include <limits.h>
 #include <complex.h>
 //#include <fftw3.h>
-#include "../matematicose.c"
-#include "../misccose.c"
+#include "matematicose.c"
+#include "misccose.c"
 
 
 typedef struct Spectrum { 

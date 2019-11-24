@@ -20,10 +20,10 @@ Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Este
     double E = E0(V,h,rmax) + Estep; // passare come argomento a Numerov?
 
     if (HO1D==true){
-         E = E0(V,h,rmax)+V(10.+1e-1); // passare come argomento a Numerov?
+         E = E0(V,h,rmax)+V(10.+1e-1);
     }
     if (HO1D==false){
-         E = E0(V,h,rmax)+V(1e-1); // passare come argomento a Numerov?
+         E = E0(V,h,rmax)+V(1e-1);
     }
     printf("\nStarting from energy %f\n", E);
 
@@ -183,7 +183,7 @@ void numerov_backward(double hh, int xc, int xmax, const double * k2, double * y
 
 
 // Very basic gradient descent toward the potential minimum (currently the nearest minimum to the middle of the grid)
-// (could now use the stochastic one in matematicose)
+// (could now use the in matematicose)
 double E0(double (*V)(double), double h, double rmax)
 {
     double r = rmax/3; // starting point

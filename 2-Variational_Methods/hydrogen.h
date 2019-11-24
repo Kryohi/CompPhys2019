@@ -28,7 +28,10 @@ typedef struct dArray {
 } dArray;
 
 
-
+void multiplytest(void);
 double * eigenvalues_nxn(double *a, double *b, uint16_t n);
+void gen_eigenvalues_nxn_gsl(double *a, double *b, double *c, const uint16_t n);
+double find_3G(double *a);
+double find_2G(double *a);
 
 
