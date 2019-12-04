@@ -200,6 +200,7 @@ double secant(double (*f)(double), double c, double x1, double x2, double inf, d
     return x2;
 }
 
+// returns the highest zero, takes a pointer to the function and the boundaries
 double findzero_last(double (*f)(double), double c, double x1, double x2, double inf, double sup)
 {
     double step = (x2-x1)/1000;

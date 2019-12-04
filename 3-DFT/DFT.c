@@ -12,7 +12,6 @@
 #define M_e 2.718281828459045
 #define h2m 0.5
 #define rmax 5.0
-#define nmax 4
 #define gridlength 5000
 #define h (rmax/gridlength)
 #define MAXSTEPS 1000
@@ -23,11 +22,16 @@
 #define rho_bK 0.00207971
 
 #define N 8
+#if N==8
+#define nmax 1
+#else
+#define nmax 2
+#endif
+
 #define rs rs_Na
 #define rho_b  (3/(4*pi*rs*rs*rs))
 #define Rc (pow(N,1/3)*rs)
 
-double * rho_ptr; // global pointer to the density array, used as a temporary workaround for a dumb Numerov function
 
 int main(int argc, char** argv)
 { 
@@ -87,9 +91,8 @@ int main(int argc, char** argv)
     {
         printf("\nITERATION %d\n", t);
         
-        rho_ptr = &rho;
         // solution of the kohn-sham equation with a trial density
-        eig = numerov(nmax, 1, gridlength, rmax, h2m, 0.13, true, bc, V_ks_rho); //TODOs rendere Vks un array o viceversa
+        eig = numerov_var(nmax, 1, gridlength, rmax, h2m, 0.13, true, bc, rho, V_ks); //TODO rendere Vks un array o viceversa
         
         // calculation of the new density from the solutions
         for (int i=1; i < gridlength; i++)
@@ -123,21 +126,11 @@ int main(int argc, char** argv)
 
 // Kohn-Sham potential
 double V_ks(double r, const double *rho)
-{
-    // interaction potential
-    double V_h = 0;
-    for (int i=1; i < (int)(h*r)-1; i+=2)
-        V_h += h * (rho[i-1]*(h*(i-1)) + 4.*rho[i]*(h*i) + rho[i+1]*(h*(i+1))) / 3.;
-    
-    for (int i=(int)(h*r); i < gridlength-1; i+=2)
-        V_h += h * (rho[i-1]*(h*(i-1))*(h*(i-1)) + 4.*rho[i]*(h*i)*(h*i) + rho[i+1]*(h*(i+1))*(h*(i+1))) / (3.*r);
-    
-    V_h = 4*pi*V_h;
-    
+{    
     // Exchange-correlation potential
     double V_xc = (-0.25*pow(3/pi,1./3)*pow(rho[(int)(h*r)],-2./3) - 0.14667*pow(4/(3*pi),1./3)*pow(rho[(int)(h*r)],-2./3)/(0.78+3/(4*pi*rho[(int)(h*r)])))*local_energy(rho[(int)(h*r)]) + local_energy(rho[(int)(h*r)]);
     
-    return V_ext(r) + V_h + V_xc;
+    return V_ext(r) + V_h(r, rho) + V_xc;
 }
 
 double V_ks_rho(double r)
@@ -151,6 +144,19 @@ double V_ext(double r)
         return -4*pi*rho_b*Rc*Rc*Rc/(3*r);
     else
         return 2*pi*rho_b*(r*r/3-Rc*Rc);
+}
+
+// Hartee potential in the Kohn-Sham equation, also used to compute the Hartree energy
+double V_h(double r, const double *rho)
+{
+    double V_h = 0.;
+    for (int i=1; i < (int)(h*r)-1; i+=2)
+        V_h += h * (rho[i-1]*(h*(i-1)) + 4.*rho[i]*(h*i) + rho[i+1]*(h*(i+1))) / 3.;
+    
+    for (int i=(int)(h*r); i < gridlength-1; i+=2)
+        V_h += h * (rho[i-1]*(h*(i-1))*(h*(i-1)) + 4.*rho[i]*(h*i)*(h*i) + rho[i+1]*(h*(i+1))*(h*(i+1))) / (3.*r);
+    
+    return 4*pi*V_h;
 }
 
 inline double local_energy(double rho)
@@ -176,14 +182,19 @@ double E_ext(double *rho)
     return simpson_integral(rhoVext, gridlength, h);
 }
 
-// Hartree energy TODO
+// Hartree energy TODO check it
 double E_h(double *rho)
 {
     double E_H = 0;
+    double integrand[gridlength];
+    
+    for (int i=0; i < gridlength; i++)
+        integrand[i] = V_h(i*h, rho)*rho[i];
+    
     for (int i=1; i < gridlength-1; i+=2)
-        E_h += h*(rho[i-1]*local_energy(rho[i-1]) + 4.*rho[i]*local_energy(rho[i]) + rho[i+1]*local_energy(rho[i+1]))/3.;
+        E_h += h*(rho[i-1]*integrand[i-1] + 4.*rho[i]*integrand[i] + rho[i+1]*integrand[i+1])/3.;
 
-    return E_h;
+    return E_h/2;
 }
 
 // Exchange-correlation energy
