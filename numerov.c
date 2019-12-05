@@ -214,15 +214,6 @@ int nodeNumber(const double * eigv, size_t N) // very rough
     return nodes;
 }
 
-double normalizationFactor(const double * eigv, double h, int x1, int x2)
-{
-    double sqmod[x2-x1];
-    
-    for(int i=x1; i<x2; i++)
-        sqmod[i-x1] = eigv[i]*eigv[i];
-    
-    return simpson_integral(sqmod, x2-x1, h);
-}
 
 void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)
 {

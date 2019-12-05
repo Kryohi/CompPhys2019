@@ -36,3 +36,4 @@ double grad_descent_1D(double (*f)(double), double x1, double x2);
 double stochastic_grad_descent_1D(double (*f)(double), double x1, double x2);
 void grad_descent(double (*f)(double*), double x1, double x2, uint16_t d, double *x, bool ascent, bool print);
 void multiply3matrix (double *a, double *c, double *b, double *e, uint16_t n); //the fourth input is the result of the multiplication, 
+double normalizationFactor(const double * eigv, double h, int x1, int x2);

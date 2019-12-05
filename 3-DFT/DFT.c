@@ -72,6 +72,7 @@ int main(int argc, char** argv)
     }
     double alpha = 0.1; // mixing coefficient of the densities
     double E1, E2; // total energy calculated in two different ways, to check for consistency
+
     
     Spectrum spectra[LMAX+1];
     for (int l=0; l<=LMAX; l++) {
@@ -86,8 +87,10 @@ int main(int argc, char** argv)
     bc.data[0] = 0.0; //NOTE should check this
 
     // check on the initial test density
+
     norm = normalizationFactor(RHO, h, 0, gridlength);
     printf("rho[0] = %f, rhonorm = %f\n", RHO[0], norm);
+
     
     
     
@@ -228,6 +231,7 @@ double E_XC(double *rho)
 
     return E_xc;
 }
+
 
 // Kohn–Sham kinetic energy (should take the ks orbitals as input)
 double T_S(double *phi)
