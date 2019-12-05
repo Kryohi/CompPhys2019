@@ -7,13 +7,15 @@
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns a Spectrum struct
+// Assumes exponentially vanishing wavefunction at rmax, while conditions in 0 get passed as a dArray
+
 Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool normalize, dArray bc0, double (*V)(double))
 {
     Spectrum sp;
     sp.EE = calloc(nmax, sizeof(double));
     sp.eigfuns = calloc(xmax*nmax, sizeof(double));
     double h = rmax/xmax;
-    int xmin = bc0.length; // usually 2, but must be longer if there are big and high barriers (e.g. scattering)
+    int xmin = bc0.length; // usually 2, but must be longer if there are big and high barriers near 0 (e.g. scattering)
     double xc_float; int xc; // point corresponding to the classical barrier
     int nfound = 0; // number of eigenvalues found
 
@@ -280,4 +282,138 @@ void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)
 }
 
 
+
+// Performs the whole algorithm and finds the spectrum up to the n-th level
+// Returns a Spectrum struct
+/*Spectrum numerov_var(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool normalize, dArray bc0, double *fun, double (*V)(double, const double *))
+{
+    Spectrum sp;
+    sp.EE = calloc(nmax, sizeof(double));
+    sp.eigfuns = calloc(xmax*nmax, sizeof(double));
+    double h = rmax/xmax;
+    int xmin = bc0.length; // usually 2, but must be longer if there are big and high barriers near 0 (e.g. scattering)
+    double xc_float; int xc; // point corresponding to the classical barrier
+    int nfound = 0; // number of eigenvalues found
+
+    double E = E0(V,h,rmax) + Estep; // passare come argomento a Numerov?
+
+    E = E0(V,h,rmax)+V(1e-1);
+    printf("\nStarting from energy %f\n", E);
+
+    double E1, E2, E_;
+    double delta, delta1, delta2, prevdelta=0;  // difference in the forward and backward log-derivatives
+    double prev_yc = 0; // needed because when function flips sign the delta also changes sign producing false positives
+    double V_[xmax], centrifugal[xmax], k2[xmax];
+    double yf[xmax], yb[xmax];  // calculated function, respectively before xc and after xc
+    
+    printf("\nFinding the spectrum for l=%d...\n", l);
+    
+    // precalculation of the known terms
+    for (int x=0; x<xmax; x++)
+    {
+        V_[x] = V(x*h+1e-14, rho);
+        centrifugal[x] = l*(l+1)/(x*h*x*h+1e-14);
+    }
+    
+    // Boundary conditions near 0
+    if (bc0.length < 2) 
+        perror("\nBoundary condition in 0 must contain at least 2 points.\n");
+    for (int x=0; x<bc0.length; x++)
+        yf[x] = bc0.data[x];
+    
+
+    // Iterative process begins
+    while (nfound < nmax)
+    {
+        xc_float = findzero_last_var(V, E, xmin*h, rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+        //printf("xc_float %f, vs harmonic %f\n", xc_float, sqrt(fabs(2*E)));
+        //xc_float = sqrt(2*E); // !!!! vale solo per armonico !!!!
+        xc = (int)round(xc_float/h);
+        
+        for (int x=0; x<xmax; x++)  // could probably start from xmin-2
+            k2[x] = (E-V_[x])/h2m - centrifugal[x];
+        
+        //for (int x=0; x<xmin; x++)
+        //    printf("K2, y = %f, %f; \t", k2[x], yf[x]);
+        
+        // Boundary conditions at rmax
+        yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
+        yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
+        
+        
+        
+        numerov_forward(h*h, xc, xmin, k2, yf);
+        numerov_backward(h*h, xc, xmax, k2, yb);
+        delta = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
+        
+        //printf("yf[xc-1] = %f,  yf[xc] = %f,  yf[xc+1]=%f\n", yf[xc-1], yf[xc], yf[xc+1]);
+        //printf("yb[xc-1] = %f,  yb[xc] = %f,  yb[xc+1]=%f\n", yb[xc-1], yb[xc], yb[xc+1]);
+        //printf("derforward = %0.15f,  derback = %0.15f\n", yf[xc], der5(yb,xc,h)/yb[xc] );
+        printf("E = %f\tDelta rough = %f\n", E, delta);
+        
+        // If there is a change in sign, start the finer search of the 0 of delta(E) with the secant method
+        if (delta*prevdelta < 0 && yf[xc]*prev_yc > 0)
+        {
+            printf("\n[Spectrum Numerov] Found a point of inversion at %f - %f\n", E-Estep, E);
+            E1 = E - Estep; // store the previous value of E, before the change of sign
+            E2 = E;
+            delta1 = prevdelta;
+            delta2 = delta;
+            
+            while (fabs(delta2) > 1e-6)
+            {
+                // Secant method
+                E_ = E2;  // E precedente
+                E2 = E2 - delta2*(E2-E1) / (delta2-delta1);
+                E1 = E_;
+                delta1 = delta2;
+                printf("E = %f\tdelta2 = %f\n", E2, delta2);
+                if (E2 > V_[xmax-1]) perror("\n!!! [Spectrum Numerov] Energy has exploded over limits !!! \n");
+                
+                // Calculation of the next delta2 value
+                xc_float = findzero_last_var(V, E2, xmin*h, rmax, -h/4, h/4); // finds the 0 of V(x)-E with the secant method.
+                xc = (int)round(xc_float/h);
+                
+                for (int x=0; x<xmax; x++)
+                    k2[x] = (E2-V_[x])/h2m - centrifugal[x];
+                
+                yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
+                yb[xmax-2] = exp(-sqrt(fabs(E)/h2m)*(xmax-1)*h);
+                numerov_forward(h*h, xc, xmin, k2, yf);
+                numerov_backward(h*h, xc, xmax, k2, yb);
+                delta2 = der5(yf,xc,h)/yf[xc] - der5(yb,xc,h)/yb[xc];
+            }
+            
+            printf("E%d = %.9f\n\n", nfound, E2);
+            // Saves the eigenstate found
+            sp.EE[nfound] = E2;
+            for (int x=0; x<xc; x++)
+                sp.eigfuns[xmax*nfound + x] = yf[x];
+            for (int x=xc; x<xmax; x++)
+                sp.eigfuns[xmax*nfound + x] = yb[x] * yf[xc]/yb[xc]; //impose continuity
+            
+            if (normalize==true)    {
+                double norm = sqrt(normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1)));
+                for (int x = xmax*nfound; x < xmax*(nfound+1); x++)
+                    sp.eigfuns[x] = sp.eigfuns[x] / norm;
+                norm = normalizationFactor(sp.eigfuns, h, xmax*nfound, xmax*(nfound+1));
+                //printf("\nnorm = %f\n", norm);
+            }
+            
+            nfound++;
+        }
+        
+        prevdelta = delta;
+        prev_yc = yf[xc];
+        E += Estep;
+        
+        if (E>V_[xmax-1])   {
+            perror("[Spectrum Numerov] Could not find enough solutions with the parameters provided\n");
+            return sp;
+        }
+    }
+    
+    return sp;
+}
+*/
 

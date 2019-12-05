@@ -200,6 +200,7 @@ double secant(double (*f)(double), double c, double x1, double x2, double inf, d
     return x2;
 }
 
+// returns the highest zero, takes a pointer to the function and the boundaries
 double findzero_last(double (*f)(double), double c, double x1, double x2, double inf, double sup)
 {
     double step = (x2-x1)/1000;
@@ -402,7 +403,7 @@ void grad_descent(double (*f)(double*), double x1, double x2, uint16_t d, double
 }
 
 
-
+/*
 void multiply3matrix (double *a, double *c, double *b, double *e, uint16_t n){ //the fourth input is the result of the multiplication, 
     gsl_matrix_view A = gsl_matrix_view_array(a, n, n);
     gsl_matrix_view B = gsl_matrix_view_array(b, n, n);
@@ -425,6 +426,6 @@ void multiply3matrix (double *a, double *c, double *b, double *e, uint16_t n){ /
                   0.0, &E.matrix);
     
 }
-
+*/
 
 
