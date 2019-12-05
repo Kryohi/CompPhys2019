@@ -67,7 +67,7 @@ int main(int argc, char** argv)
     eig.xmax = gridlength;
     eig.nmax = nmax;
     eig.EE = calloc(nmax, sizeof(double));
-    eig.eigfuns = calloc(gridlength*nmax, sizeof(double));
+    eig.eigfuns = bcalloc(gridlength*nmax, sizeof(double));
     dArray bc; // boundary conditions
     bc.length = 2;
     bc.data = calloc(2, sizeof(double));
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
     bc.data[1] = pow(rmax/gridlength,l);
 
     // check on the initial test density
-    norm = normalizationFactor(rho, h, 0, gridlength);
+    norm = x(rho, h, 0, gridlength);
     rho_ptr = &rho;
     printf("rho[0] = %f, rhoptr[0] = %f, rhonorm = %f\n", rho[0], rho_ptr[0], norm);
     

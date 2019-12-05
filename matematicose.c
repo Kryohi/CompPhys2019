@@ -427,4 +427,12 @@ void multiply3matrix (double *a, double *c, double *b, double *e, uint16_t n){ /
 }
 
 
-
+double normalizationFactor(const double * eigv, double h, int x1, int x2)
+{
+    double sqmod[x2-x1];
+    
+    for(int i=x1; i<x2; i++)
+        sqmod[i-x1] = eigv[i]*eigv[i];
+    
+    return simpson_integral(sqmod, x2-x1, h);
+}
