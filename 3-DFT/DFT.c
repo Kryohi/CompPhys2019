@@ -1,7 +1,6 @@
 #include "DFT.h"
 //TODO 
-// far funzionare numerov con vettore
-// calcolo energia cinetica TS
+// calcolo energia cinetica TS (serve a qualcosa?)
 // vari printf 
 // usare save2csv
 // capire boundaries
@@ -22,6 +21,7 @@
 
 #define N 8
 #define NMAX 1 // should be 1 for Z=8 and 2 for Z=20???
+#define LMAX 1 // 1 (p) for Z=8 and 2 (d) for Z=20???
 
 #define rs rs_Na
 #define rho_b  (3/(4*pi*rs*rs*rs))
@@ -34,6 +34,12 @@ int main(int argc, char** argv)
     // creates data folder and files to save data
     make_directory("Data");
     chdir("Data");
+    
+    FILE * ksenergy; // saves energy from the two different calculations
+    ksenergy = fopen("ksenergy.csv", "w");
+    FILE * ksdensity; // saves densities, mixed and unmixed
+    ksdensity = fopen("ksdensity.csv", "w");
+
     
     /*int N;
     if (argc == 2)
@@ -57,25 +63,26 @@ int main(int argc, char** argv)
     //double rho = calloc(gridlength, sizeof(double));
     RHO = calloc(gridlength, sizeof(double));
     double * rho_old = calloc(gridlength, sizeof(double));
-    
+    // starting guess for the density is a normalized gaussian
     for (int i=1; i < gridlength; i++)
     {
         RHO[i] = pow(M_e, -(i*h)*(i*h))/(pi/2);
         rho_old[i] = RHO[i];
     }
-    double alpha = 0.1; //
+    double alpha = 0.1; // mixing coefficient of the densities
     double E1, E2; // total energy calculated in two different ways, to check for consistency
     
-    Spectrum eig;
-    eig.xmax = gridlength;
-    eig.nmax = NMAX;
-    eig.EE = calloc(NMAX, sizeof(double));
-    eig.eigfuns = calloc(gridlength*NMAX, sizeof(double));
-    dArray bc; // boundary conditions
+    Spectrum spectra[LMAX+1];
+    for (int l=0; l<=LMAX; l++) {
+        spectra[l].xmax = gridlength;
+        spectra[l].nmax = NMAX;
+        spectra[l].EE = calloc(NMAX, sizeof(double));
+        spectra[l].eigfuns = calloc(gridlength*NMAX, sizeof(double));
+    }
+    dArray bc; // boundary conditions in 0
     bc.length = 2;
     bc.data = calloc(2, sizeof(double));
-    bc.data[0] = 0;
-    bc.data[1] = pow(rmax/gridlength,l);
+    bc.data[0] = 0.0; //NOTE should check this
 
     // check on the initial test density
     norm = normalizationFactor(RHO, h, 0, gridlength);
@@ -89,20 +96,33 @@ int main(int argc, char** argv)
     {
         printf("\nITERATION %d\n", t);
         
-        // solution of the kohn-sham equation with a trial density
-        eig = numerov(NMAX, 1, gridlength, rmax, h2m, 0.13, true, bc, V_ks_rho);
+        // solution (Kohn-Sham orbitals) of the kohn-sham equation with a trial density RHO, for different angular momentum values
+        for (int l=0; l<=LMAX; l++) {
+            bc.data[1] = pow(rmax/gridlength,l);
+            spectra[l] = numerov(NMAX, 1, gridlength, rmax, h2m, 0.13, true, bc, V_ks_rho);
+        }
+        save2csv(spectra, LMAX, NMAX, gridlength);
         
-        // calculation of the new density from the solutions
+        // calculation of the new density from the solutions, including the mix with the old density
         for (int i=1; i < gridlength; i++)
         {
-            RHO[i] = ; // somma del modulo quadro delle autofunzioni trovate con numerov, per 2 di spin
-            RHO[i] =  alpha*RHO[i] + (1-alpha)*rho_old[i]; // mixing of the solution with the old density (va messa prima o dopo?)
+            // somma del modulo quadro delle autofunzioni trovate con numerov, times degeneration
+            if (N==8)   {
+                // adds the 2 electrons in the 1s orbital + the 6 in the 1p
+                RHO[i] = 2*spectra[0].eigfuns[i]*spectra[0].eigfuns[i] + 6*spectra[1].eigfuns[i]*spectra[1].eigfuns[i];
+            }
+            else if (N==20)  {
+                // adds the 2 electrons in the 1s orbital + the 6 in the 1p
+                RHO[i] = 2*spectra[0].eigfuns[i]*spectra[0].eigfuns[i] + 6*spectra[1].eigfuns[i]*spectra[1].eigfuns[i];
+            }
+            fprintf(ksdensity, ",y%d%d", l, n);
+            RHO[i] =  alpha*RHO[i] + (1-alpha)*rho_old[i]; // mixing of the solution with the old density (va messa prima o dopo ks?)
             rho_old[i] = RHO[i];
         }
 
         // Consistency check through the energy
         E1 = E_ks(RHO);
-        E2 = sum(eig.EE, N) -0.5*E_H(RHO) + E_XC(RHO); // sum of the eigenvalues - 1/2 hartree energy - exchange 
+        E2 = spectra[0].EE[0]*2 + spectra[1].EE[0]*6 - E_H(RHO) + E_XC(RHO); // sum of the eigenvalues - 1/2 hartree energy - exchange 
         printf("E_ks = %f\tE_ = %f\tdiff = %f\n", E1, E2, E2-E1);
         
         // Check on the convergence by looking at how different is the new density
@@ -117,10 +137,13 @@ int main(int argc, char** argv)
         
         
     free(bc.data);
-    free(eig.eigfuns);
+    for (int l=0; l<=LMAX; l++)
+        free(spectra[l].eigfuns);
     
     return 0;
 }
+
+
 
 // Kohn-Sham potential
 double V_ks(double r, const double *rho)
@@ -157,18 +180,12 @@ double V_h(double r, const double *rho)
     return 4*pi*V_h;
 }
 
-inline double local_energy(double rho)
-{
-    return -0.75*pow(3*rho/pi, 1/3) - 0.44/(0.78 + 3/(4*pi*rho));
-}
+
 
 // Energy functional
 double E_ks(double *rho)
 {
-    double E_k=0;
-    //E_k = ???????????????
-
-    return E_k + E_ext(rho) + E_H(rho) + E_XC(rho);
+    return T_S(rho) + E_ext(rho) + E_H(rho) + E_XC(rho);
 }
 
 // External energy
@@ -206,5 +223,20 @@ double E_XC(double *rho)
     return E_xc;
 }
 
+// Kohn–Sham kinetic energy (should take the ks orbitals as input)
+double T_S(double *phi)
+{
+    double integrand[gridlength-4]; //excludes extrema used as boundary conditions
+    
+    for(int i=2; i<gridlength-2; i++)
+        integrand[i-2] = der5(phi,i,h) * der5(phi,i,h);
+    
+    return h2m * simpson_integral(integrand, gridlength-4, h);
+}
 
 
+// Local energy used in the LDA
+inline double local_energy(double rho)
+{
+    return -0.75*pow(3*rho/pi, 1/3) - 0.44/(0.78 + 3/(4*pi*rho));
+}
