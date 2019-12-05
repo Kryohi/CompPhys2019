@@ -7,6 +7,8 @@
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns a Spectrum struct
+// Assumes exponentially vanishing wavefunction at rmax, while conditions in 0 get passed as a dArray
+
 Spectrum numerov(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool normalize, dArray bc0, double (*V)(double))
 {
     Spectrum sp;
@@ -283,7 +285,7 @@ void save2csv(Spectrum * spectra, int lmax, int nmax, int xmax)
 
 // Performs the whole algorithm and finds the spectrum up to the n-th level
 // Returns a Spectrum struct
-Spectrum numerov_var(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool normalize, dArray bc0, double *fun, double (*V)(double, const double *))
+/*Spectrum numerov_var(int nmax, int l, int xmax, double rmax, double h2m, double Estep, bool normalize, dArray bc0, double *fun, double (*V)(double, const double *))
 {
     Spectrum sp;
     sp.EE = calloc(nmax, sizeof(double));
@@ -331,8 +333,8 @@ Spectrum numerov_var(int nmax, int l, int xmax, double rmax, double h2m, double 
         for (int x=0; x<xmax; x++)  // could probably start from xmin-2
             k2[x] = (E-V_[x])/h2m - centrifugal[x];
         
-        /*for (int x=0; x<xmin; x++)
-            printf("K2, y = %f, %f; \t", k2[x], yf[x]);*/
+        //for (int x=0; x<xmin; x++)
+        //    printf("K2, y = %f, %f; \t", k2[x], yf[x]);
         
         // Boundary conditions at rmax
         yb[xmax-1] = exp(-sqrt(fabs(E)/h2m)*xmax*h);
@@ -413,6 +415,5 @@ Spectrum numerov_var(int nmax, int l, int xmax, double rmax, double h2m, double 
     
     return sp;
 }
-
-
+*/
 
