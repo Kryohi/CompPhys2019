@@ -39,6 +39,7 @@ int main(int argc, char** argv)
     ksenergy = fopen("ksenergy.csv", "w");
     FILE * ksdensity; // saves densities, mixed and unmixed
     ksdensity = fopen("ksdensity.csv", "w");
+    fprintf(ksdensity, "phi_s, phi_p, rho, rho_mix, delta\n");
 
     
     /*int N;
@@ -115,8 +116,9 @@ int main(int argc, char** argv)
                 // adds the 2 electrons in the 1s orbital + the 6 in the 1p
                 RHO[i] = 2*spectra[0].eigfuns[i]*spectra[0].eigfuns[i] + 6*spectra[1].eigfuns[i]*spectra[1].eigfuns[i];
             }
-            fprintf(ksdensity, ",y%d%d", l, n);
+            fprintf(ksdensity, "%f, %f, %f, ", spectra[0].eigfuns[i], spectra[1].eigfuns[i], RHO[i]);
             RHO[i] =  alpha*RHO[i] + (1-alpha)*rho_old[i]; // mixing of the solution with the old density (va messa prima o dopo ks?)
+            fprintf(ksdensity, "%f, ", RHO[i]);
             rho_old[i] = RHO[i];
         }
 
@@ -124,10 +126,13 @@ int main(int argc, char** argv)
         E1 = E_ks(RHO);
         E2 = spectra[0].EE[0]*2 + spectra[1].EE[0]*6 - E_H(RHO) + E_XC(RHO); // sum of the eigenvalues - 1/2 hartree energy - exchange 
         printf("E_ks = %f\tE_ = %f\tdiff = %f\n", E1, E2, E2-E1);
+        fprintf(ksenergy, "%f, %f, %f\n", E1, E2, E2-E1);
+
         
         // Check on the convergence by looking at how different is the new density
         delta = fabs(RHO[0] - rho_old[0]);
-        for (int i=1; i<gridlength; i++)
+        fprintf(ksdensity, "%f\n", delta);
+        for (int i=1; i<gridlength; i++)    // NOTE currently takes the max difference 
             if (fabs(RHO[i]-rho_old[i]) > delta)
                 delta = fabs(RHO[i]-rho_old[i]);
             
@@ -139,6 +144,7 @@ int main(int argc, char** argv)
     free(bc.data);
     for (int l=0; l<=LMAX; l++)
         free(spectra[l].eigfuns);
+    fclose(ksdensity); fclose(ksenergy);
     
     return 0;
 }
